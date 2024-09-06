@@ -10,20 +10,20 @@ class EIP712Domain(BaseLibraryModel):
 
 class EIP712JsonSchema(BaseLibraryModel):
     primaryType: str
-    types: list[EIP712Domain]
+    types: dict[str, list[EIP712Domain]]
 
 class EIP712Schema(BaseLibraryModel):
     eip712Schema: Union[AnyUrl, EIP712JsonSchema]
 
 class Domain(BaseLibraryModel):
-    name: str
-    version: str
-    chainId: int
-    verifyingContract: ContractAddress
+    name: Optional[str] = None
+    version: Optional[str] = None
+    chainId: Optional[int] = None
+    verifyingContract: Optional[ContractAddress] = None
 
 class EIP712(BaseLibraryModel):
-    domain: Domain
-    schemas: Optional[list[EIP712Schema]] = None
+    domain: Optional[Domain] = None
+    schemas:  Optional[list[Union[EIP712JsonSchema, AnyUrl]]] = None
 
 class EIP712DomainBinding(BaseLibraryModel):
     eip712: EIP712   
@@ -40,9 +40,9 @@ class AbiJsonSchema(BaseLibraryModel):
     inputs: list[AbiParameter]
 
 class Contract(BaseLibraryModel):
-    chainId: int
-    address: ContractAddress
-    abi: Union[AnyUrl, AbiJsonSchema]
+    chainId: Optional[int] = None
+    address: Optional[ContractAddress] = None
+    abi: Optional[Union[AnyUrl, AbiJsonSchema]] = None
 
 class ContractBinding(BaseLibraryModel): 
     contract: Contract

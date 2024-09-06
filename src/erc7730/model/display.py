@@ -70,7 +70,7 @@ class AllowanceAmountParameters(BaseLibraryModel):
 class Field(BaseLibraryModel):
     id: Optional[Id] = None
     label: str
-    format: Format
+    format: str
     sources: Optional[list[Source]] = None
     collectionPath: Optional[str] = None
     tokenAmountParameters: Optional[TokenAmountParameters] = None
