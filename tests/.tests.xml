@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="0.780" timestamp="2024-09-05T21:30:15.534341+02:00" hostname="LMFR0047"><testcase classname="tests.src.erc7730.test_datamodel" name="test_from_erc7730" time="0.152"><failure message="pydantic_core._pydantic_core.ValidationError: 11 validation errors for ERC7730Descriptor&#10;context.ContractContext.contract&#10;  Field required [type=missing, input_value={'eip712': {'domain': {'n...d353F723c1bDb64CA6Aa'}}}, input_type=dict]&#10;    For further information visit https://errors.pydantic.dev/2.8/v/missing&#10;context.ContractContext.id&#10;  Field required [type=missing, input_value={'eip712': {'domain': {'n...d353F723c1bDb64CA6Aa'}}}, input_type=dict]&#10;    For further information visit https://errors.pydantic.dev/2.8/v/missing&#10;context.EIP712Context.eip712.schemas&#10;  Field required [type=missing, input_value={'domain': {'name': 'Dai ...9d353F723c1bDb64CA6Aa'}}, input_type=dict]&#10;    For further information visit https://errors.pydantic.dev/2.8/v/missing&#10;context.EIP712Context.id&#10;  Field required [type=missing, input_value={'eip712': {'domain': {'n...d353F723c1bDb64CA6Aa'}}}, input_type=dict]&#10;    For further information visit https://errors.pydantic.dev/2.8/v/missing&#10;metadata.constants&#10;  Field required [type=missing, input_value={'owner': 'MakerDAO', 'in...'DAI', 'magnitude': 18}}, input_type=dict]&#10;    For further information visit https://errors.pydantic.dev/2.8/v/missing&#10;metadata.enums&#10;  Field required [type=missing, input_value={'owner': 'MakerDAO', 'in...'DAI', 'magnitude': 18}}, input_type=dict]&#10;    For further information visit https://errors.pydantic.dev/2.8/v/missing&#10;display.definitions&#10;  Field required [type=missing, input_value={'formats': {'Permit': {'...alue', 'deadline']}]}}}}, input_type=dict]&#10;    For further information visit https://errors.pydantic.dev/2.8/v/missing&#10;display.formats.Permit.id&#10;  Field required [type=missing, input_value={'screens': {'stax': [{'t...'value', 'deadline']}]}}, input_type=dict]&#10;    For further information visit https://errors.pydantic.dev/2.8/v/missing&#10;display.formats.Permit.intent&#10;  Field required [type=missing, input_value={'screens': {'stax': [{'t...'value', 'deadline']}]}}, input_type=dict]&#10;    For further information visit https://errors.pydantic.dev/2.8/v/missing&#10;display.formats.Permit.fields&#10;  Field required [type=missing, input_value={'screens': {'stax': [{'t...'value', 'deadline']}]}}, input_type=dict]&#10;    For further information visit https://errors.pydantic.dev/2.8/v/missing&#10;display.formats.Permit.required&#10;  Field required [type=missing, input_value={'screens': {'stax': [{'t...'value', 'deadline']}]}}, input_type=dict]&#10;    For further information visit https://errors.pydantic.dev/2.8/v/missing">def test_from_erc7730() -&gt; None:
+        print(model_from_json_file_or_none(Path("tests/resources/eip712-permit-DAI.json"), BaseLibraryModel))
+&gt;       assert model_from_json_file_or_none(Path("tests/resources/eip712-permit-DAI.json"), ERC7730Descriptor) is not None
+
+tests/src/erc7730/test_datamodel.py:8: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src/erc7730/common/pydantic.py:25: in model_from_json_file_or_none
+    return model_from_json_file(path, model) if os.path.isfile(path) else None
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = PosixPath('tests/resources/eip712-permit-DAI.json'), model = &lt;class 'erc7730.model.erc7730_descriptor.ERC7730Descriptor'&gt;
+
+    def model_from_json_file(path: Path, model: type[M]) -&gt; M:
+        """
+        Load a Pydantic model from a JSON file.
+        """
+        with open(path) as f:
+&gt;           return model.model_validate_json(f.read(), strict=True)
+E           pydantic_core._pydantic_core.ValidationError: 11 validation errors for ERC7730Descriptor
+E           context.ContractContext.contract
+E             Field required [type=missing, input_value={'eip712': {'domain': {'n...d353F723c1bDb64CA6Aa'}}}, input_type=dict]
+E               For further information visit https://errors.pydantic.dev/2.8/v/missing
+E           context.ContractContext.id
+E             Field required [type=missing, input_value={'eip712': {'domain': {'n...d353F723c1bDb64CA6Aa'}}}, input_type=dict]
+E               For further information visit https://errors.pydantic.dev/2.8/v/missing
+E           context.EIP712Context.eip712.schemas
+E             Field required [type=missing, input_value={'domain': {'name': 'Dai ...9d353F723c1bDb64CA6Aa'}}, input_type=dict]
+E               For further information visit https://errors.pydantic.dev/2.8/v/missing
+E           context.EIP712Context.id
+E             Field required [type=missing, input_value={'eip712': {'domain': {'n...d353F723c1bDb64CA6Aa'}}}, input_type=dict]
+E               For further information visit https://errors.pydantic.dev/2.8/v/missing
+E           metadata.constants
+E             Field required [type=missing, input_value={'owner': 'MakerDAO', 'in...'DAI', 'magnitude': 18}}, input_type=dict]
+E               For further information visit https://errors.pydantic.dev/2.8/v/missing
+E           metadata.enums
+E             Field required [type=missing, input_value={'owner': 'MakerDAO', 'in...'DAI', 'magnitude': 18}}, input_type=dict]
+E               For further information visit https://errors.pydantic.dev/2.8/v/missing
+E           display.definitions
+E             Field required [type=missing, input_value={'formats': {'Permit': {'...alue', 'deadline']}]}}}}, input_type=dict]
+E               For further information visit https://errors.pydantic.dev/2.8/v/missing
+E           display.formats.Permit.id
+E             Field required [type=missing, input_value={'screens': {'stax': [{'t...'value', 'deadline']}]}}, input_type=dict]
+E               For further information visit https://errors.pydantic.dev/2.8/v/missing
+E           display.formats.Permit.intent
+E             Field required [type=missing, input_value={'screens': {'stax': [{'t...'value', 'deadline']}]}}, input_type=dict]
+E               For further information visit https://errors.pydantic.dev/2.8/v/missing
+E           display.formats.Permit.fields
+E             Field required [type=missing, input_value={'screens': {'stax': [{'t...'value', 'deadline']}]}}, input_type=dict]
+E               For further information visit https://errors.pydantic.dev/2.8/v/missing
+E           display.formats.Permit.required
+E             Field required [type=missing, input_value={'screens': {'stax': [{'t...'value', 'deadline']}]}}, input_type=dict]
+E               For further information visit https://errors.pydantic.dev/2.8/v/missing
+
+src/erc7730/common/pydantic.py:18: ValidationError</failure></testcase></testsuite></testsuites>

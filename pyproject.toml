@@ -1,5 +1,5 @@
 [project]
-name = "eip-712-erc-7730"
+name = "erc7730"
 description = "Translation from erc-7730 file to eip-712 descriptor"
 authors = [{ name = "Ledger" }]
 maintainers = [{ name = "Ledger" }]
@@ -24,16 +24,16 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://ledgerhq.github.io/eip-712-erc-7730"
-Documentation = "https://ledgerhq.github.io/eip-712-erc-7730"
-Repository = "https://github.com/LedgerHQ/eip-712-erc-7730"
+Homepage = "https://ledgerhq.github.io/python-erc7730"
+Documentation = "https://ledgerhq.github.io/python-erc7730"
+Repository = "https://github.com/LedgerHQ/python-erc7730"
 
 [build-system]
 requires = ["pdm-pep517>=1.0.0"]
 build-backend = "pdm.pep517.api"
 
 [project.scripts]
-eip712 = "eip-712-erc-7730.main:app"
+eip712 = "erc7730.main:app"
 
 [tool.pdm.scripts]
 lint.help = "Run all linters/formatters (automatically run by pre-commit)"
