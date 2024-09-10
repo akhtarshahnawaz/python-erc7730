@@ -26,15 +26,15 @@ def to_eip712_mapper(erc7730: ERC7730Descriptor) -> EIP712BaseMapper:
                 schema = dict[str, str]()
                 schemas = context.eip712.schemas
                 if(schemas is not None):
-                    for item in schemas:
-                        sch = None
+                    sch = None
+                    for idx, item in enumerate(schemas):
                         if (isinstance(item, EIP712JsonSchema)): 
                             sch = item
                         else:
                             response = requests.get(item.__str__())
                             sch = model_from_json_bytes(response.content, EIP712JsonSchema)
-                            for domain in sch.types["EIP712Domain"]:
-                                schema[domain.name] = domain.type
+                        for domain in sch.types["EIP712Domain"]:
+                            schema[idx.__str__() + domain.name] = domain.type
                 return EIP712BaseMapper(chain_id, contract_address, schema, display_name)
     else: 
         raise Exception(f"context for {erc7730} is None or is not EIP712")
