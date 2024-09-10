@@ -21,6 +21,8 @@ classifiers = [
 dependencies = [
     "pydantic>=2.8.2",
     "pydantic-settings>=2.4.0",
+    "eip712-clearsign>=2.1.0",
+    "requests"
 ]
 
 [project.urls]
