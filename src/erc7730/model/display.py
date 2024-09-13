@@ -83,5 +83,3 @@ class Field(BaseLibraryModel):
 class Display(BaseLibraryModel):
     definitions: Optional[Dict[str, Field]] = None
     formats: Dict[str, Format]
-
-

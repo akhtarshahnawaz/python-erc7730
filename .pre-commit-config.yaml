@@ -32,42 +32,42 @@ repos:
 #          - pydantic
 #          - pytest
 #
-#  - repo: https://github.com/pdm-project/pdm
-#    rev: 2.18.1
-#    hooks:
-#      - id: pdm-lock-check
-#        name: check pdm lock file
-#
-#  - repo: https://github.com/adrienverge/yamllint.git
-#    rev: v1.29.0
-#    hooks:
-#      - id: yamllint
-#        name: check yaml files (yamllint)
-#
-#  - repo: https://github.com/pre-commit/pre-commit-hooks
-#    rev: v4.5.0
-#    hooks:
-#      - id: check-ast
-#      - id: check-builtin-literals
-#      - id: check-case-conflict
-#      - id: check-docstring-first
-#      - id: check-executables-have-shebangs
-#      - id: check-merge-conflict
-#      - id: check-shebang-scripts-are-executable
-#      - id: check-symlinks
-#      - id: check-toml
-#      - id: check-json
-#      - id: check-yaml
-#      - id: check-vcs-permalinks
-#      - id: debug-statements
-#      - id: destroyed-symlinks
-#      - id: detect-private-key
-#      - id: end-of-file-fixer
-#      - id: forbid-new-submodules
-#      - id: mixed-line-ending
-#      - id: fix-byte-order-marker
-#      # - id: no-commit-to-branch TODO (temporary for development)
-#
+  - repo: https://github.com/pdm-project/pdm
+    rev: 2.18.1
+    hooks:
+      - id: pdm-lock-check
+        name: check pdm lock file
+
+  - repo: https://github.com/adrienverge/yamllint.git
+    rev: v1.29.0
+    hooks:
+      - id: yamllint
+        name: check yaml files (yamllint)
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: check-ast
+      - id: check-builtin-literals
+      - id: check-case-conflict
+      - id: check-docstring-first
+      - id: check-executables-have-shebangs
+      - id: check-merge-conflict
+      - id: check-shebang-scripts-are-executable
+      - id: check-symlinks
+      - id: check-toml
+      - id: check-json
+      - id: check-yaml
+      - id: check-vcs-permalinks
+      - id: debug-statements
+      - id: destroyed-symlinks
+      - id: detect-private-key
+      - id: end-of-file-fixer
+      - id: forbid-new-submodules
+      - id: mixed-line-ending
+      - id: fix-byte-order-marker
+      # - id: no-commit-to-branch TODO (temporary for development)
+
 #  - repo: https://github.com/asottile/pyupgrade
 #    rev: v3.15.2
 #    hooks:
@@ -122,9 +122,9 @@ repos:
 #        name: lint docs spelling (codespell)
 #        additional_dependencies:
 #          - tomli
-#
-#  - repo: https://github.com/rhysd/actionlint
-#    rev: v1.6.27
-#    hooks:
-#      - id: actionlint
-#        name: lint Github Actions workflows (actionlint)
+
+  - repo: https://github.com/rhysd/actionlint
+    rev: v1.6.27
+    hooks:
+      - id: actionlint
+        name: lint Github Actions workflows (actionlint)

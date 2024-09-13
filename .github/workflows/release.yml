@@ -1,4 +1,3 @@
----
 name: release
 
 on:
@@ -46,7 +45,7 @@ jobs:
 
       - name: Sign distribution artifacts
         timeout-minutes: 10
-        uses:  LedgerHQ/actions-security/actions/sign-blob@actions/sign-blob-1
+        uses: LedgerHQ/actions-security/actions/sign-blob@actions/sign-blob-1
         with:
           path: dist
 
