@@ -12,6 +12,11 @@ jobs:
       contents: read
       id-token: write
     steps:
+      - name: Login to Ledger Artifactory
+        timeout-minutes: 10
+        id: jfrog-login
+        uses: LedgerHQ/actions-security/actions/jfrog-login@actions/jfrog-login-1
+
       - name: Checkout
         timeout-minutes: 10
         uses: actions/checkout@v4
@@ -32,7 +37,7 @@ jobs:
 
 #      - name: Generate build attestations
 #        timeout-minutes: 10
-#        uses: LedgerHQ/actions-security/actions/attest@actions/attest-1
+#        uses: LedgerHQ/actions-security/actions/attest@actions/attest-1.0.2
 #        with:
 #          subject-path: dist/*
 
