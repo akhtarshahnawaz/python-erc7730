@@ -1,0 +1,55 @@
+name-template: 'v$RESOLVED_VERSION'
+tag-template: 'v$RESOLVED_VERSION'
+categories:
+  - title: '️⚠️ Breaking changes'
+    labels:
+      - 'breaking'
+  - title: '🚀 Features'
+    labels:
+      - 'feat'
+      - 'feature'
+      - 'enhancement'
+  - title: '🐛 Bug Fixes'
+    labels:
+      - 'fix'
+      - 'bugfix'
+      - 'bug'
+  - title: '🌈 Tech improvements'
+    labels:
+      - 'chore'
+      - 'tech'
+      - 'refactor'
+      - 'refactoring'
+      - 'ci'
+      - 'test'
+      - 'documentation'
+  - title: '🛠️ Dependency updates'
+    collapse-after: 3
+    labels:
+      - 'deps'
+      - 'dependencies'
+  - title: '🏗️ Infrastructure changes'
+    collapse-after: 3
+    labels:
+      - 'infra'
+      - 'deploy'
+change-template: '- $TITLE @$AUTHOR (#$NUMBER)'
+change-title-escapes: '\<*_&'
+exclude-labels:
+  - 'skip-changelog'
+version-resolver:
+  major:
+    labels:
+      - 'major'
+  minor:
+    labels:
+      - 'minor'
+      - 'feat'
+      - 'feature'
+      - 'enhancement'
+  patch:
+    labels:
+      - 'patch'
+  default: patch
+template: |
+  $CHANGES

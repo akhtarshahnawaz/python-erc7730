@@ -1,0 +1,31 @@
+changelog:
+
+  exclude:
+    labels:
+      # custom labels
+      - ci
+      - refactoring
+      - temp
+
+  categories:
+    - title: Features
+      labels:
+        - enhancement # standard github label
+    - title: Fixes
+      labels:
+        - bug # standard github label
+    - title: ! Breaking changes !
+      labels:
+        - breaking change # custom label
+    - title: Tech improvements
+      labels:
+        - tech # custom label
+    - title: Dependency updates
+      labels:
+        - dependencies # standard github label
+    - title: Documentation
+      labels:
+        - documentation # standard github label
+    - title: Other changes
+      labels:
+        - "*"
