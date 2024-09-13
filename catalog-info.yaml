@@ -1,0 +1,16 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: python-erc7730
+  description: ERC-7730 descriptors validation and utilities.
+  annotations:
+    github.com/project-slug: "LedgerHQ/python-erc7730"
+    ledger.com/code_repository: https://github.com/LedgerHQ/python-erc7730
+    ledger.com/documentation: https://github.com/LedgerHQ/python-erc7730
+  labels:
+    ledger.com/contains_pii: "no"
+    ledger.com/donjon_review: "on-demand"
+spec:
+  type: metadata
+  lifecycle: production
+  owner: group:backend-core
