@@ -37,11 +37,11 @@ jobs:
         timeout-minutes: 10
         run: pdm build
 
-#      - name: Generate build attestations
-#        timeout-minutes: 10
-#        uses: LedgerHQ/actions-security/actions/attest@actions/attest-1.0.2
-#        with:
-#          subject-path: dist/*
+      - name: Generate build attestations
+        timeout-minutes: 10
+        uses: LedgerHQ/actions-security/actions/attest@actions/attest-1
+        with:
+          subject-path: dist/*
 
       - name: Sign distribution artifacts
         timeout-minutes: 10
