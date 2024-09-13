@@ -4,15 +4,16 @@ on:
   release:
     types: [published]
 
+permissions:
+  contents: read
+  id-token: write
+  attestations: write
 
 jobs:
   publish:
     name: publish python library
     timeout-minutes: 60
     runs-on: ledgerhq-shared-small
-    permissions:
-      contents: read
-      id-token: write
     steps:
       - name: Login to Ledger Artifactory
         timeout-minutes: 10
