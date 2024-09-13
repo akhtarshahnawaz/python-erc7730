@@ -1,0 +1,5 @@
+self-hosted-runner:
+  labels:
+    - ledgerhq-shared-small
+    - ledgerhq-shared-medium
+    - ledgerhq-shared-large
