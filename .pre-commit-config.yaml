@@ -123,8 +123,9 @@ repos:
 #        additional_dependencies:
 #          - tomli
 
-  - repo: https://github.com/rhysd/actionlint
-    rev: v1.6.27
-    hooks:
-      - id: actionlint
-        name: lint Github Actions workflows (actionlint)
+# FIXME false positive: unknown permission scope "attestations".
+#  - repo: https://github.com/rhysd/actionlint
+#    rev: v1.6.27
+#    hooks:
+#      - id: actionlint
+#        name: lint Github Actions workflows (actionlint)
