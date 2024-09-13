@@ -41,12 +41,8 @@ lint.help = "Run all linters/formatters (automatically run by pre-commit)"
 lint.shell = "pre-commit run --all-files"
 test.help = "Run unit/integration tests suite"
 test.shell = "pytest tests"
-docs.help = "Build documentation (output is at docs/build/index.html)"
-docs.shell = "sphinx-build --fail-on-warning docs docs/build"
-profile.help = "Run the cal command with profiling (report is at outputs/profiling.html)"
-profile.shell = "pyinstrument --renderer html --outfile outputs/profiling.html --from-path cal"
-all.help = "Run lint+test+docs"
-all.shell = { composite = ["lint", "test", "docs"] }
+all.help = "Run lint+test"
+all.shell = { composite = ["lint", "test"] }
 
 [tool.pdm]
 plugins = ["sync-pre-commit-lock"]
