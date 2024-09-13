@@ -1,0 +1,128 @@
+---
+name: continuous integration
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+permissions:
+  id-token: write
+  contents: write
+  actions: write
+  pull-requests: write
+  pages: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    name: continuous integration
+    runs-on: ledgerhq-shared-medium
+    timeout-minutes: 60
+    steps:
+
+      - name: Checkout
+        timeout-minutes: 10
+        uses: actions/checkout@v4
+        with:
+          submodules: "true"
+
+      - name: Check skippable steps
+        timeout-minutes: 10
+        id: skip
+        uses: fkirc/skip-duplicate-actions@v5
+        with:
+          cancel_others: true
+          skip_after_successful_duplicate: true
+          do_not_skip: '["workflow_dispatch", "schedule"]'
+          paths_filter: |
+            project:
+              paths:
+                - '*.lock'
+                - 'pyproject.toml'
+            ci:
+              paths:
+                - '.github/**'
+            docs:
+              paths:
+                - 'docs/**'
+            sources:
+              paths:
+                - 'src/**'
+                - 'tests/**'
+
+      - name: Pull request | Add author
+        timeout-minutes: 5
+        if: github.event_name == 'pull_request'
+        uses: toshimaru/auto-author-assign@v2.1.0
+
+      - name: Pull request | Add labels
+        timeout-minutes: 30
+        if: github.event_name == 'pull_request'
+        uses: actions/labeler@v5
+
+      - name: Pull request | Enforce labels
+        timeout-minutes: 5
+        if: github.event_name == 'pull_request'
+        uses: mheap/github-action-required-labels@v5
+        with:
+          mode: minimum
+          count: 1
+          labels: |
+            documentation
+            ci
+            sources
+            dependencies
+          add_comment: true
+
+      - name: Setup pre-commit cache
+        timeout-minutes: 10
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pre-commit
+          key: pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}
+
+      - name: Setup python / PDM
+        timeout-minutes: 10
+        uses: ./.github/actions/pdm
+
+      - name: Install dependencies
+        timeout-minutes: 10
+        run: pdm install --dev --check --frozen-lockfile
+        env:
+          FURY_TOKEN: ${{ secrets.PYPI_DEPLOY_TOKEN}}
+
+      - name: Lint
+        timeout-minutes: 10
+        if: |
+          !steps.skip.outputs.should_skip ||
+          !fromJSON(steps.skip.outputs.paths_result).project.should_skip ||
+          !fromJSON(steps.skip.outputs.paths_result).ci.should_skip ||
+          !fromJSON(steps.skip.outputs.paths_result).sources.should_skip
+        run: pdm run lint
+        env:
+          PRE_COMMIT_COLOR: always
+
+      - name: Test
+        timeout-minutes: 20
+        if: |
+          !steps.skip.outputs.should_skip ||
+          !fromJSON(steps.skip.outputs.paths_result).project.should_skip ||
+          !fromJSON(steps.skip.outputs.paths_result).ci.should_skip ||
+          !fromJSON(steps.skip.outputs.paths_result).sources.should_skip
+        run: pdm run test
+
+      - name: Publish test reports
+        timeout-minutes: 10
+        if: always()
+        uses: pmeier/pytest-results-action@v0.6.0
+        with:
+          path: tests/.tests.xml
+          title: Test results
+          summary: true
+          display-options: fEX
+          fail-on-empty: false
