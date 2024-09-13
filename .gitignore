@@ -1,0 +1,5 @@
+# py cache files
+*.pyc
+
+# tests output files
+tests/**/*.xml
