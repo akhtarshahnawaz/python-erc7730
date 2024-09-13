@@ -1,0 +1,45 @@
+---
+name: update dependencies
+
+on:
+  schedule:
+    - cron: "0 0 * * *"
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    name: update dependencies
+    runs-on: ledgerhq-shared-small
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        timeout-minutes: 10
+        uses: actions/checkout@v4
+
+      - name: Setup python / PDM
+        timeout-minutes: 10
+        uses: ./.github/actions/pdm
+
+      - name: Update dependencies
+        timeout-minutes: 30
+        uses: pdm-project/update-deps-action@main
+        with:
+          token: ${{ secrets.CI_BOT_TOKEN }}
+          pr-title: "dependencies: update dependencies"
+          commit-message: "dependencies: update dependencies"
+          update-strategy: reuse
+          save-strategy: minimum
+          unconstrained: false
+          install-plugins: false
+          sign-off-commit: false
+        env:
+          FURY_TOKEN: ${{ secrets.PYPI_DEPLOY_TOKEN}}
