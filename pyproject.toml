@@ -34,7 +34,7 @@ requires = ["pdm-pep517>=1.0.0"]
 build-backend = "pdm.pep517.api"
 
 [project.scripts]
-eip712 = "erc7730.main:app"
+erc7730 = "erc7730.main:app"
 
 [tool.pdm.scripts]
 lint.help = "Run all linters/formatters (automatically run by pre-commit)"
@@ -67,7 +67,7 @@ dev = [
 
 [tool.pdm.version]
 source = "scm"
-write_to = "eip-712-erc-7730/VERSION"
+write_to = "erc7730/VERSION"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -88,7 +88,7 @@ addopts = [
 ]
 
 [tool.coverage.paths]
-source = ["src/eip-712-erc-7730"]
+source = ["src"]
 
 [tool.coverage.run]
 omit = ["tests/*"]
