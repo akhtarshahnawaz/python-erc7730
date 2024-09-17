@@ -1,6 +1,6 @@
 from erc7730.model.base import BaseLibraryModel
 from erc7730.model.types import Id
-from typing import ForwardRef, Optional, Dict, Union
+from typing import ForwardRef, Optional, Union
 from enum import StrEnum
 from pydantic import RootModel, Field as PydanticField
 
@@ -24,7 +24,7 @@ class FieldFormat(StrEnum):
 
 class Reference(BaseLibraryModel):
     ref: str = PydanticField(alias='$ref')
-    params: Optional[Dict[str, str]]
+    params: Optional[dict[str, str]]
 
 class TokenAmountParameters(BaseLibraryModel):
     tokenPath: str
@@ -63,7 +63,7 @@ class FieldDescription(BaseLibraryModel):
 class StructFormats(BaseLibraryModel):
      fields: ForwardRef('Fields') # type: ignore
 
-class Fields(RootModel[Dict[str, Union[Reference, Field, StructFormats]]]):
+class Fields(RootModel[dict[str, Union[Reference, Field, StructFormats]]]):
     """ todo use StructFormats instead """
 StructFormats.model_rebuild()
 
@@ -75,12 +75,10 @@ class Format(BaseLibraryModel):
      intent: Optional[str] = None
      fields: Optional[Fields] = None
      required: Optional[list[str]] = None
-     screens: Optional[Dict[str, list[Screen]]] = None
+     screens: Optional[dict[str, list[Screen]]] = None
 
 
 
 class Display(BaseLibraryModel):
-    definitions: Optional[Dict[str, Field]] = None
-    formats: Dict[str, Format]
-
-
+    definitions: Optional[dict[str, Field]] = None
+    formats: dict[str, Format]
