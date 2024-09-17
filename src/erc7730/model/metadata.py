@@ -19,10 +19,3 @@ class Metadata(BaseLibraryModel):
     token: Optional[TokenInfo] = None
     constants: Optional[Dict[str, str]] = None
     enums: Optional[Union[AnyUrl, Dict[str, Dict[str, str]]]] = None
-
-
-
-
-
-
-

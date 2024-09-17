@@ -1,0 +1,29 @@
+name: 'Setup python / PDM'
+description: 'Setup python / PDM'
+
+inputs:
+  python-version:
+    description: 'Python version'
+    required: true
+    default: '3.12.3'
+
+runs:
+  using: "composite"
+  steps:
+
+    - name: Setup python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.python-version }}
+        cache: pip
+
+    - name: Install PDM
+      uses: pdm-project/setup-pdm@v4
+      with:
+        python-version: ${{ inputs.python-version }}
+        cache: true
+
+    - name: Setup PDM
+      shell: bash
+      run: |
+        pdm config install.cache true

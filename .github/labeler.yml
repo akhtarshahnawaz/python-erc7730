@@ -1,0 +1,15 @@
+documentation:
+  - changed-files:
+      - any-glob-to-any-file: ['docs/**', 'README.md']
+
+ci:
+  - changed-files:
+      - any-glob-to-any-file: ['.github/**']
+
+sources:
+  - changed-files:
+      - any-glob-to-any-file: ['src/**', 'test/**', 'pyproject.toml']
+
+dependencies:
+  - changed-files:
+      - any-glob-to-any-file: ['pdm.lock']

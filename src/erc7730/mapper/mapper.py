@@ -92,4 +92,4 @@ def parseField(primaryType: str, output: list[EIP712Field], field: Field) -> lis
             pass                           
     output.append(EIP712Field(path=primaryType, label=name, assetPath=assetPath, format=fieldFormat, coinRef=None))
     return output
-    
+   
