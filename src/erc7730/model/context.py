@@ -1,4 +1,4 @@
-from typing import Union, Optional
+from typing import ForwardRef, Union, Optional
 from pydantic import AnyUrl
 from erc7730.model.base import BaseLibraryModel
 from erc7730.model.types import ContractAddress, Id
@@ -32,8 +32,9 @@ class AbiParameter(BaseLibraryModel):
     name: str
     type: str
     internalType: Optional[str] = None
-    components: Optional[list[BaseLibraryModel]] = None 
-    """ todo: use AbiParameter instead of BaseLibraryModel type """ 
+    components: Optional[list[ForwardRef('AbiParameter')]] = None # type: ignore
+AbiParameter.model_rebuild()
+""" todo: use AbiParameter instead of BaseLibraryModel type """ 
 
 class AbiJsonSchema(BaseLibraryModel):
     name: str

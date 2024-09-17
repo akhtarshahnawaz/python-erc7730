@@ -10,6 +10,6 @@ def test_to_eip712_mapper() -> None:
     eip712_mapper = to_eip712_mapper(uniswap_eip712_cs_descriptor)
     assert eip712_mapper is not None
     assert eip712_mapper.chain_id == 1
-    assert eip712_mapper.contract_address.__str__() == "0x000000000022D473030F116dDEE9F6B43aC78BA3"
-    assert eip712_mapper.display_name == "Permit2"
-    assert eip712_mapper.schema.__len__() == 6
+    assert eip712_mapper.name == "Permit2"
+    assert eip712_mapper.contracts.__len__() == 2
+    assert eip712_mapper.contracts[0].messages.__len__() == 1
