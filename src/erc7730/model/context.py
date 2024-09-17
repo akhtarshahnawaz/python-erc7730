@@ -34,7 +34,7 @@ class AbiParameter(BaseLibraryModel):
     internalType: Optional[str] = None
     components: Optional[list[ForwardRef('AbiParameter')]] = None # type: ignore
 AbiParameter.model_rebuild()
-""" todo: use AbiParameter instead of BaseLibraryModel type """ 
+# todo: use AbiParameter instead of BaseLibraryModel type
 
 class AbiJsonSchema(BaseLibraryModel):
     name: str

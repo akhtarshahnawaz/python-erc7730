@@ -9,4 +9,3 @@ files = glob.glob('clear-signing-erc7730-registry/registry/*/*.json')
 @pytest.mark.parametrize("file", files)
 def test_from_erc7730(file: str) -> None:
     assert model_from_json_file_or_none(Path(file), ERC7730Descriptor) is not None
-
