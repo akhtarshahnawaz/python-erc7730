@@ -1,11 +1,13 @@
 
 from pydantic import AnyUrl
 from erc7730.common.pydantic import model_from_json_bytes
-from erc7730.model.context import EIP712JsonSchema
+from erc7730.model.context import EIP712JsonSchema, EIP712Context, EIP712, Domain, EIP712Domain
 from erc7730.model.erc7730_descriptor import ERC7730Descriptor, EIP712Context
-from erc7730.model.display import Display, Reference, Field, StructFormats, FieldFormat, Fields
+from erc7730.model.display import Display, Reference, Field, StructFormats, FieldFormat, Fields, Format, DateParameters, DateEncoding, TokenAmountParameters
 from eip712 import EIP712DAppDescriptor, EIP712ContractDescriptor, EIP712Mapper, EIP712MessageDescriptor, EIP712Field, EIP712Format
 import requests
+
+from erc7730.model.metadata import Metadata
 
 
 def to_eip712_mapper(erc7730: ERC7730Descriptor) -> EIP712DAppDescriptor|list[Exception]:
@@ -92,4 +94,40 @@ def parseField(primaryType: str, output: list[EIP712Field], field: Field) -> lis
             pass                           
     output.append(EIP712Field(path=primaryType, label=name, assetPath=assetPath, format=fieldFormat, coinRef=None))
     return output
-   
+
+def to_erc7730_mapper(eip712DappDescriptor: EIP712DAppDescriptor) -> ERC7730Descriptor:
+    verifyingContract = None
+    if eip712DappDescriptor.contracts.__len__() > 0:
+        verifyingContract = eip712DappDescriptor.contracts[0].address
+    domain = Domain(name = eip712DappDescriptor.name, version = None, chainId = eip712DappDescriptor.chain_id, verifyingContract = verifyingContract)
+    formats = dict[str,Format]()
+    schemas = list[EIP712JsonSchema | AnyUrl]()
+    for contract in eip712DappDescriptor.contracts:
+        types = dict[str, list[EIP712Domain]]()
+        for message in contract.messages:
+            mapper = message.mapper
+            fields = dict[str, Reference | Field | StructFormats]()
+            eip712Domains = list[EIP712Domain]()
+            for item in mapper.fields:
+                dateParameters = None
+                tokenAmountParameters = None
+                if item.format is not None:
+                    match item.format:
+                        case EIP712Format.AMOUNT:
+                            if item.assetPath is not None:
+                                tokenAmountParameters = TokenAmountParameters(tokenPath=item.assetPath)
+                        case EIP712Format.DATETIME:
+                            dateParameters = DateParameters(encoding=DateEncoding.TIMESTAMP)
+                        case _:
+                            pass
+                    fields[item.label] = Field(sources=None, collectionPath=None, tokenAmountParameters=tokenAmountParameters, allowanceAmountParameters=None, percentageParameters=None, dateParameters=dateParameters, enumParameters=None)
+                    eip712Domains.append(EIP712Domain(name = item.label, type = item.format.name))
+            types[mapper.label] = eip712Domains
+            formats[mapper.label] = Format(id=None, intent=None, fields=Fields(root=fields), required=None, screens=None)
+            schemas.append(EIP712JsonSchema(primaryType = mapper.label, types = types))
+
+    eip712 = EIP712(domain = domain, schemas = schemas)
+    context = EIP712Context(eip712 = eip712)
+    display = Display(definitions=None, formats = formats)
+    metadata = Metadata(owner=None, info=None, token=None, constants=None, enums=None)
+    return ERC7730Descriptor(context = context, includes=None, metadata=metadata, display=display)
