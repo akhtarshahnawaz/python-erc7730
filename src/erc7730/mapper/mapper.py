@@ -95,7 +95,6 @@ def parseField(primaryType: str, output: list[EIP712Field], field: Field) -> lis
     output.append(EIP712Field(path=primaryType, label=name, assetPath=assetPath, format=fieldFormat, coinRef=None))
     return output
 
-
 def to_erc7730_mapper(eip712DappDescriptor: EIP712DAppDescriptor) -> ERC7730Descriptor:
     verifyingContract = None
     if eip712DappDescriptor.contracts.__len__() > 0:
@@ -132,4 +131,3 @@ def to_erc7730_mapper(eip712DappDescriptor: EIP712DAppDescriptor) -> ERC7730Desc
     display = Display(definitions=None, formats = formats)
     metadata = Metadata(owner=None, info=None, token=None, constants=None, enums=None)
     return ERC7730Descriptor(context = context, includes=None, metadata=metadata, display=display)
-    

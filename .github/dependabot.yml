@@ -1,0 +1,43 @@
+version: 2
+
+updates:
+
+  - package-ecosystem: "gitsubmodule"
+    directory: "/"
+    target-branch: "next"
+    schedule:
+      interval: "daily"
+    commit-message:
+      prefix: "[submodules] "
+    labels:
+      - "assets"
+    assignees:
+      - "LedgerHQ/backend-core"
+    reviewers:
+      - "LedgerHQ/backend-core"
+
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "[dependencies] "
+    labels:
+      - "dependencies"
+    assignees:
+      - "LedgerHQ/backend-core"
+    reviewers:
+      - "LedgerHQ/backend-core"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "[ci] "
+    labels:
+      - "ci"
+    assignees:
+      - "LedgerHQ/backend-core"
+    reviewers:
+      - "LedgerHQ/backend-core"

@@ -1,5 +1,25 @@
-# py cache files
 *.pyc
-
-# tests output files
+misc_hash.log
+.idea
+venv
+.venv
+target
+index.csv
+.vscode/settings.json
+output
+signatures/test
+testset/**/*.pb.bin
+.DS_Store
+*.local
+full_report.md
+summary_report.md
+.pdm*
+*.egg-info
+tmp/
+docs/build
 tests/**/*.xml
+.benchmarks/
+.coverage*
+outputs/**/*.html
+exports
+dist/
