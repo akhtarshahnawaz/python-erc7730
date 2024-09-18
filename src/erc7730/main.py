@@ -30,7 +30,9 @@ def lint(
     outputs = lint_all(path, demo)
 
     for output in outputs:
-        print(f"[red]{output.level.name}: line {output.line}: {output.title} {output.message}[/red]")
+        p=output.file.name if output.file is not None else "unknown file"
+        print(f"[red]{p}: {output.level.name}: {output.title}\n"
+              f"    {output.message}[/red]")
 
     if not outputs:
         print("[green]no issues found ✅[/green]")
