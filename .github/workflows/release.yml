@@ -57,3 +57,10 @@ jobs:
           PDM_PUBLISH_USERNAME: ${{ steps.jfrog-login.outputs.oidc-user }}
           PDM_PUBLISH_PASSWORD: ${{ steps.jfrog-login.outputs.oidc-token }}
         run: pdm publish --no-build
+
+      - name: Upload distribution artifacts to Gemfury
+        timeout-minutes: 10
+        env:
+          PDM_PUBLISH_REPO: https://pypi.fury.io/ledger/
+          PDM_PUBLISH_PASSWORD: ${{ secrets.PYPI_DEPLOY_TOKEN}}
+        run: pdm publish --no-build
