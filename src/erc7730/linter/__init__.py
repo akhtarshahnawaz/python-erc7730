@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from enum import IntEnum, auto
+from optparse import Option
 
 from erc7730.model.erc7730_descriptor import ERC7730Descriptor
 
@@ -18,10 +19,10 @@ class Linter(ABC):
             WARNING = auto()
             ERROR = auto()
 
-        file: FilePath
-        line: int
+        file: FilePath | None = None
+        line: int | None = None
         title: str
         message: str
-        level: Level
+        level: Level = Level.ERROR
 
     OutputAdder = Callable[[Output], None]
