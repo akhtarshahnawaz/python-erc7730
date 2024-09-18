@@ -15,11 +15,6 @@ jobs:
     timeout-minutes: 60
     runs-on: ledgerhq-shared-small
     steps:
-      - name: Login to Ledger Artifactory
-        timeout-minutes: 10
-        id: jfrog-login
-        uses: LedgerHQ/actions-security/actions/jfrog-login@actions/jfrog-login-1
-
       - name: Checkout
         timeout-minutes: 10
         uses: actions/checkout@v4
@@ -37,26 +32,6 @@ jobs:
       - name: Build distribution artifacts
         timeout-minutes: 10
         run: pdm build
-
-      - name: Generate build attestations
-        timeout-minutes: 10
-        uses: LedgerHQ/actions-security/actions/attest@actions/attest-1
-        with:
-          subject-path: dist/*
-
-      - name: Sign distribution artifacts
-        timeout-minutes: 10
-        uses: LedgerHQ/actions-security/actions/sign-blob@actions/sign-blob-1
-        with:
-          path: dist
-
-      - name: Upload distribution artifacts to Ledger Artifactory repository
-        timeout-minutes: 10
-        env:
-          PDM_PUBLISH_REPO: https://jfrog.ledgerlabs.net/artifactory/api/pypi/vault-pypi-prod-green
-          PDM_PUBLISH_USERNAME: ${{ steps.jfrog-login.outputs.oidc-user }}
-          PDM_PUBLISH_PASSWORD: ${{ steps.jfrog-login.outputs.oidc-token }}
-        run: pdm publish --no-build
 
       - name: Upload distribution artifacts to Gemfury
         timeout-minutes: 10
