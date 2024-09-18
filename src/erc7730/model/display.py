@@ -1,6 +1,6 @@
 from erc7730.model.base import BaseLibraryModel
 from erc7730.model.types import Id
-from typing import ForwardRef, Optional, Union
+from typing import Any, ForwardRef, Optional, Union
 from enum import StrEnum
 from pydantic import RootModel, Field as PydanticField
 
@@ -60,7 +60,7 @@ class Field(BaseLibraryModel):
     percentageParameters: Optional[PercentageParameters] = None
     dateParameters: Optional[DateParameters] = None
     enumParameters: Optional[str] = None
-    params: Optional[dict[str, str]] = None  # FIXME better typing
+    params: Optional[dict[str, Any]] = None  # FIXME better typing
 
 
 class FieldDescription(BaseLibraryModel):
