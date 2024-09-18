@@ -9,13 +9,11 @@ from pydantic import BaseModel, FilePath
 
 
 class Linter(ABC):
-
     @abstractmethod
-    def lint(self, descriptor: ERC7730Descriptor, out: 'OutputAdder') -> None:
+    def lint(self, descriptor: ERC7730Descriptor, out: "OutputAdder") -> None:
         raise NotImplementedError()
 
     class Output(BaseModel):
-
         class Level(IntEnum):
             INFO = auto()
             WARNING = auto()
@@ -27,4 +25,4 @@ class Linter(ABC):
         message: str
         level: Level
 
-    OutputAdder = Callable[[Self], None]
+    OutputAdder = Callable[[Output], None]
