@@ -36,6 +36,7 @@ jobs:
         timeout-minutes: 10
         run: pdm build
 
-      - uses: LedgerHQ/actions/gemfury/publish
+      - name: Publish to Gemfury
+        uses: LedgerHQ/actions/gemfury/publish@main
         env:
           DEPLOY_TOKEN: ${{ secrets.PYPI_PUSH_TOKEN }}
