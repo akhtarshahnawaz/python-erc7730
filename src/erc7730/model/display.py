@@ -60,6 +60,7 @@ class Field(BaseLibraryModel):
     percentageParameters: Optional[PercentageParameters] = None
     dateParameters: Optional[DateParameters] = None
     enumParameters: Optional[str] = None
+    params: Optional[dict[str, str]] = None  # FIXME better typing
 
 
 class FieldDescription(BaseLibraryModel):
