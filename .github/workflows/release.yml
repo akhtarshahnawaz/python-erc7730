@@ -6,19 +6,36 @@ on:
   pull_request:
   workflow_dispatch:
 
+permissions:
+  contents: read
+  id-token: write
+  attestations: write
+
 jobs:
   publish:
     name: publish python library
     timeout-minutes: 60
     runs-on: ledgerhq-shared-small
     steps:
-      - uses: LedgerHQ/actions/python-lib@main
+
+      - name: Checkout
+        timeout-minutes: 10
+        uses: actions/checkout@v4
+
+      - name: Setup python / PDM
+        timeout-minutes: 10
+        uses: ./.github/actions/pdm
+
+      - name: Install dependencies
+        timeout-minutes: 10
+        run: pdm install --dev --check --frozen-lockfile
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GREEN_NEXUS_HOST: ${{ secrets.GREEN_NEXUS_HOST }}
-          GREEN_NEXUS_USER: ${{ secrets.GREEN_NEXUS_USER }}
-          GREEN_NEXUS_PASSWORD: ${{ secrets.GREEN_NEXUS_PASSWORD }}
-          PYPI_PUSH_TOKEN: ${{ secrets.PYPI_PUSH_TOKEN }}
-          PYPI_DEPLOY_TOKEN: ${{ secrets.PYPI_DEPLOY_TOKEN }}
-        with:
-          python-version: "3.12"
+          FURY_TOKEN: ${{ secrets.PYPI_DEPLOY_TOKEN}}
+
+      - name: Build distribution artifacts
+        timeout-minutes: 10
+        run: pdm build
+
+      - uses: LedgerHQ/actions/gemfury/publish
+        env:
+          DEPLOY_TOKEN: ${{ secrets.PYPI_PUSH_TOKEN }}
