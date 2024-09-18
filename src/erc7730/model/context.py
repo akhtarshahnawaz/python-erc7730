@@ -1,4 +1,4 @@
-from typing import ForwardRef, Union, Optional
+from typing import Union, Optional
 from pydantic import AnyUrl
 from erc7730.model.base import BaseLibraryModel
 from erc7730.model.types import ContractAddress, Id
@@ -28,7 +28,7 @@ class Domain(BaseLibraryModel):
 
 class EIP712(BaseLibraryModel):
     domain: Optional[Domain] = None
-    schemas:  Optional[list[Union[EIP712JsonSchema, AnyUrl]]] = None
+    schemas: Optional[list[Union[EIP712JsonSchema, AnyUrl]]] = None
 
 
 class EIP712DomainBinding(BaseLibraryModel):

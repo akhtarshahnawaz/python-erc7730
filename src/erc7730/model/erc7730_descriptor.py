@@ -6,6 +6,7 @@ from pydantic import ConfigDict, AnyUrl
 from pathlib import Path
 from typing import Union, Optional
 
+
 class ERC7730Descriptor(BaseLibraryModel):
     model_config = ConfigDict(
         strict=True,

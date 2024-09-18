@@ -92,5 +92,4 @@ class Error(BaseLibraryModel):
     signature: str | None = None
 
 
-ABI = Annotated[Constructor | Event | Function | Fallback |
-                Error | Receive, Field(discriminator="type")]
+ABI = Annotated[Constructor | Event | Function | Fallback | Error | Receive, Field(discriminator="type")]

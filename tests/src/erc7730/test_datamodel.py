@@ -4,7 +4,8 @@ from erc7730.model.erc7730_descriptor import ERC7730Descriptor
 import pytest
 import glob
 
-files = glob.glob('clear-signing-erc7730-registry/registry/*/*.json')
+files = glob.glob("clear-signing-erc7730-registry/registry/*/*.json")
+
 
 @pytest.mark.parametrize("file", files)
 def test_from_erc7730(file: str) -> None:
