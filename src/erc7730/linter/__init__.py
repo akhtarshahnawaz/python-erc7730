@@ -1,7 +1,6 @@
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from enum import IntEnum, auto
-from typing import Self
 
 from erc7730.model.erc7730_descriptor import ERC7730Descriptor
 
