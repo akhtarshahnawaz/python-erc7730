@@ -3,15 +3,6 @@ from typing import Annotated
 
 import typer
 
-from erc7730.common.pydantic import model_from_json_file
-from erc7730.linter import Linter
-from erc7730.linter.linter_check_impacts import CheckImpactsLinter
-from erc7730.linter.linter_demo import DemoLinter
-from erc7730.linter.linter_transaction_type_classifier_ai import ClassifyTransactionTypeLinter
-from erc7730.linter.linter_validate_abi import ValidateABILinter
-from erc7730.linter.linter_validate_display_fields import ValidateDisplayFieldsLinter
-from erc7730.linter.linter_validate_structure import ValidateStructureLinter
-from erc7730.model.erc7730_descriptor import ERC7730Descriptor
 from rich import print
 
 app = typer.Typer(
@@ -34,27 +25,9 @@ def lint(
     path: Annotated[Path, typer.Argument(help="The file path")],
     demo: Annotated[bool, typer.Option(help="Enable demo mode")] = False,
 ) -> None:
-    from erc7730.linter.linter_base import MultiLinter
+    from erc7730.linter.lint import lint_all
 
-    descriptor = model_from_json_file(path, ERC7730Descriptor)
-
-    outputs: list[Linter.Output] = []
-
-    def adder(output: Linter.Output) -> None:
-        outputs.append(output.model_copy(update={"file": path}))
-
-    linters = [
-        ValidateABILinter(),
-        ValidateStructureLinter(),
-        ValidateDisplayFieldsLinter(),
-        ClassifyTransactionTypeLinter(),
-        CheckImpactsLinter(),
-    ]
-
-    if demo:
-        linters.append(DemoLinter())
-
-    MultiLinter(linters).lint(descriptor, adder)
+    outputs = lint_all(path, demo)
 
     for output in outputs:
         print(f"[red]{output.level.name}: line {output.line}: {output.title} {output.message}[/red]")
