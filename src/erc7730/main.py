@@ -6,6 +6,7 @@ import typer
 from erc7730.common.pydantic import model_from_json_file
 from erc7730.linter import Linter
 from erc7730.linter.linter_check_impacts import CheckImpactsLinter
+from erc7730.linter.linter_demo import DemoLinter
 from erc7730.linter.linter_transaction_type_classifier_ai import ClassifyTransactionTypeLinter
 from erc7730.linter.linter_validate_abi import ValidateABILinter
 from erc7730.linter.linter_validate_display_fields import ValidateDisplayFieldsLinter
@@ -21,6 +22,7 @@ app = typer.Typer(
     """,
 )
 
+
 @app.command(
     name="lint",
     short_help="Validate a descriptor file.",
@@ -28,24 +30,31 @@ app = typer.Typer(
     Validate a descriptor file.
     """,
 )
-def lint(path: Annotated[Path, typer.Argument(help="The file path")]) -> None:
+def lint(
+    path: Annotated[Path, typer.Argument(help="The file path")],
+    demo: Annotated[bool, typer.Option(help="Enable demo mode")] = False,
+) -> None:
     from erc7730.linter.linter_base import MultiLinter
 
     descriptor = model_from_json_file(path, ERC7730Descriptor)
 
     outputs: list[Linter.Output] = []
 
-    linter = MultiLinter(
-        [
-            ValidateABILinter(),
-            ValidateStructureLinter(),
-            ValidateDisplayFieldsLinter(),
-            ClassifyTransactionTypeLinter(),
-            CheckImpactsLinter(),
-        ]
-    )
+    def adder(output: Linter.Output) -> None:
+        outputs.append(output.model_copy(update={"file": path}))
 
-    linter.lint(descriptor, outputs.append)
+    linters = [
+        ValidateABILinter(),
+        ValidateStructureLinter(),
+        ValidateDisplayFieldsLinter(),
+        ClassifyTransactionTypeLinter(),
+        CheckImpactsLinter(),
+    ]
+
+    if demo:
+        linters.append(DemoLinter())
+
+    MultiLinter(linters).lint(descriptor, adder)
 
     for output in outputs:
         print(f"[red]{output.level.name}: line {output.line}: {output.title} {output.message}[/red]")
@@ -54,6 +63,7 @@ def lint(path: Annotated[Path, typer.Argument(help="The file path")]) -> None:
         print("[green]no issues found ✅[/green]")
 
     raise typer.Exit(1 if outputs else 0)
+
 
 @app.command(
     name="check",
