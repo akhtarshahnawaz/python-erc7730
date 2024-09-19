@@ -34,7 +34,7 @@ class ValidateDisplayFieldsLinter(Linter):
                     if schema.primaryType not in descriptor.display.formats:
                         out(
                             Linter.Output(
-                                title="Missing Display Field",
+                                title="Missing Display field",
                                 message=f"Display field for primary type `{schema.primaryType}` is missing.",
                                 level=Linter.Output.Level.WARNING,
                             )
@@ -46,7 +46,7 @@ class ValidateDisplayFieldsLinter(Linter):
                     for path in eip712_paths - format_paths:
                         out(
                             Linter.Output(
-                                title="Missing Display Field",
+                                title="Missing Display field",
                                 message=f"Display field for path `{path}` is missing for message {schema.primaryType}.",
                                 level=Linter.Output.Level.WARNING,
                             )
@@ -54,7 +54,7 @@ class ValidateDisplayFieldsLinter(Linter):
                     for path in format_paths - eip712_paths:
                         out(
                             Linter.Output(
-                                title="Extra Display Field",
+                                title="Extra Display field",
                                 message=f"Display field for path `{path}` is not in message {schema.primaryType}.",
                                 level=Linter.Output.Level.ERROR,
                             )
@@ -73,7 +73,7 @@ class ValidateDisplayFieldsLinter(Linter):
                 if fmt not in primary_types:
                     out(
                         Linter.Output(
-                            title="Invalid Display Field",
+                            title="Invalid Display field",
                             message=f"Format message `{fmt}` is not in EIP712 schemas.",
                             level=Linter.Output.Level.ERROR,
                         )
@@ -107,7 +107,7 @@ class ValidateDisplayFieldsLinter(Linter):
                 for path in abi_paths - format_paths:
                     out(
                         Linter.Output(
-                            title="Missing Display Field",
+                            title="Missing Display field",
                             message=f"Display field for path `{path}` is missing for selector {selector}.",
                             level=Linter.Output.Level.WARNING,
                         )
@@ -115,7 +115,7 @@ class ValidateDisplayFieldsLinter(Linter):
                 for path in format_paths - abi_paths:
                     out(
                         Linter.Output(
-                            title="Extra Display Field",
+                            title="Invalid Display field",
                             message=f"Display field for path `{path}` is not in selector {selector}.",
                             level=Linter.Output.Level.ERROR,
                         )

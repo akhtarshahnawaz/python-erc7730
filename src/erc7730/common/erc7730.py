@@ -38,7 +38,7 @@ def compute_eip712_paths(schema: EIP712JsonSchema) -> set[str]:
 
 
 def compute_format_paths(format: Format) -> tuple[set[str], set[str]]:
-    """Compute the sets of all reachable paths in an ERC7730 Format."""
+    """Compute the sets of all reachable paths in an ERC7730 Format. Returns a tuple (external paths, internal paths)"""
 
     def append_paths(path: str, fields: Fields | None, paths: set[str]) -> None:
         if fields is not None:
