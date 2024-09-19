@@ -41,7 +41,7 @@ class ValidateDisplayFieldsLinter(Linter):
                         )
                         continue
                     eip712_paths = compute_eip712_paths(schema)
-                    format_paths, _ = compute_format_paths(descriptor.display.formats[schema.primaryType])
+                    format_paths = compute_format_paths(descriptor.display.formats[schema.primaryType]).data_paths
 
                     for path in eip712_paths - format_paths:
                         out(
@@ -101,7 +101,7 @@ class ValidateDisplayFieldsLinter(Linter):
                         )
                     )
                     continue
-                format_paths, _ = compute_format_paths(fmt)
+                format_paths = compute_format_paths(fmt).data_paths
                 abi_paths = abi_paths_by_selector[selector]
 
                 for path in abi_paths - format_paths:

@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from erc7730.model.context import EIP712Domain, EIP712JsonSchema
 from erc7730.model.display import Field, Fields, Format, Reference, StructFormats
 
@@ -14,7 +15,7 @@ def _remove_slicing(token_path: str) -> str:
 
 
 def compute_eip712_paths(schema: EIP712JsonSchema) -> set[str]:
-    """Compute the sets of all reachable paths in an EIP712 schema."""
+    """Compute the sets of valid paths for an EIP712 schema."""
 
     def append_paths(
         path: str, current_type: list[EIP712Domain], types: dict[str, list[EIP712Domain]], paths: set[str]
@@ -37,24 +38,39 @@ def compute_eip712_paths(schema: EIP712JsonSchema) -> set[str]:
     return paths
 
 
-def compute_format_paths(format: Format) -> tuple[set[str], set[str]]:
-    """Compute the sets of all reachable paths in an ERC7730 Format. Returns a tuple (external paths, internal paths)"""
+@dataclass(kw_only=True)
+class FormatPaths:
+    data_paths: set[str]  # References to values in the serialized data
+    format_paths: set[str]  # References to values in the format specification file
+    container_paths: set[str]  # References to values in the container
 
-    def append_paths(path: str, fields: Fields | None, paths: set[str]) -> None:
+
+def compute_format_paths(format: Format) -> FormatPaths:
+    """Compute the sets of paths referred in an ERC7730 Format."""
+    paths = FormatPaths(data_paths=set(), format_paths=set(), container_paths=set())
+
+    def add_path(root: str, path: str) -> None:
+        if path.startswith("@."):
+            paths.container_paths.add(path[2:])
+        elif path.startswith("$."):
+            paths.format_paths.add(path[2:])
+        elif path.startswith("#."):
+            paths.data_paths.add(path[2:])
+        else:
+            paths.data_paths.add(_append_path(root, path))
+
+    def append_paths(path: str, fields: Fields | None) -> None:
         if fields is not None:
             for field_name, field in fields.root.items():
                 match field:
                     case Field():
-                        paths.add(_append_path(path, field_name))
+                        add_path(path, field_name)
                         if field.params and "tokenPath" in field.params:  # FIXME model is not correct
-                            paths.add(_append_path(path, _remove_slicing(field.params["tokenPath"])))
+                            add_path(path, _remove_slicing(field.params["tokenPath"]))
                     case StructFormats():
-                        append_paths(_append_path(path, field_name), field.fields, paths)
+                        append_paths(_append_path(path, field_name), field.fields)
                     case Reference():
                         raise NotImplementedError("Unsupported reference field")
 
-    paths: set[str] = set()
-    append_paths("", format.fields, paths)
-
-    internal_paths = {path for path in paths if path.startswith(("@", "$"))}
-    return paths - internal_paths, internal_paths
+    append_paths("", format.fields)
+    return paths

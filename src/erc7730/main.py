@@ -3,7 +3,7 @@ from typing import Annotated
 
 import typer
 
-from rich import print
+from rich import print as rprint
 
 app = typer.Typer(
     name="erc7730",
@@ -34,25 +34,25 @@ def lint(
     for output in outputs:
         p = output.file.name if output.file is not None else "unknown file"
         if gha:
-            msg = f"{output.title} - {output.message}"
+            # msg = f"{output.title} {output.message}"
             match output.level:
                 case Linter.Output.Level.INFO:
-                    print(f"::notice file={output.file}::{msg}")
+                    print(f"::notice file={output.file},title={output.title}::{output.message}")
                 case Linter.Output.Level.WARNING:
-                    print(f"::warning file={output.file}::{msg}")
+                    print(f"::warning file={output.file},title={output.title}::{output.message}")
                 case Linter.Output.Level.ERROR:
-                    print(f"::error file={output.file}::{msg}")
+                    print(f"::error file={output.file},title={output.title}::{output.message}")
         else:
             match output.level:
                 case Linter.Output.Level.INFO:
-                    print(f"[blue]{p}: {output.level.name}: {output.title}[/blue]\n" f"    {output.message}")
+                    rprint(f"[blue]{p}: {output.level.name}: {output.title}[/blue]\n" f"    {output.message}")
                 case Linter.Output.Level.WARNING:
-                    print(f"[yellow]{p}: {output.level.name}: {output.title}[/yellow]\n" f"    {output.message}")
+                    rprint(f"[yellow]{p}: {output.level.name}: {output.title}[/yellow]\n" f"    {output.message}")
                 case Linter.Output.Level.ERROR:
-                    print(f"[red]{p}: {output.level.name}: {output.title}[/red]\n" f"    {output.message}")
+                    rprint(f"[red]{p}: {output.level.name}: {output.title}[/red]\n" f"    {output.message}")
 
     if not outputs:
-        print("[green]no issues found ✅[/green]")
+        rprint("[green]no issues found ✅[/green]")
 
     raise typer.Exit(1 if outputs else 0)
 
