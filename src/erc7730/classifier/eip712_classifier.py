@@ -5,7 +5,7 @@ from erc7730.model.context import EIP712JsonSchema
 from erc7730.classifier import Classifier, TxClass
 
 
-class EIP712Classifier(Classifier):
+class EIP712Classifier(Classifier[EIP712JsonSchema]):
     @override
     def classify(self, schema: EIP712JsonSchema) -> TxClass | None:
         pass

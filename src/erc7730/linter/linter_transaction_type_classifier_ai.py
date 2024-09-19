@@ -1,24 +1,31 @@
+from erc7730.classifier.abi_classifier import ABIClassifier
 from erc7730.classifier.eip712_classifier import EIP712Classifier
 from erc7730.display_format_checker import DisplayFormatChecker
 from erc7730.linter import Linter
-from erc7730.model.context import EIP712JsonSchema
+from erc7730.model.context import EIP712Context, ContractContext, EIP712JsonSchema
 from erc7730.model.display import Display
 from erc7730.model.erc7730_descriptor import ERC7730Descriptor
 
-from erc7730.classifier import TxClass, Classifier
+from erc7730.classifier import TxClass
+from pydantic import AnyUrl
 
 
 def determine_tx_class(descriptor: ERC7730Descriptor) -> TxClass | None:
-    if descriptor.context.eip712 is not None:
-        classifier: Classifier = EIP712Classifier()
-        first_schema: EIP712JsonSchema = descriptor.context.eip712.schemas[0]
-        return classifier.classify(first_schema)
-    elif descriptor.context.abi is not None:
-        classifier: Classifier = EIP712Classifier()
-        first_schema: EIP712JsonSchema = descriptor.context.contract.abi[0]
-        return classifier.classify(first_schema)
-    else:
-        return None
+    if isinstance(descriptor.context, EIP712Context):
+        classifier = EIP712Classifier()
+        if descriptor.context.eip712.schemas is not None:
+            first_schema = descriptor.context.eip712.schemas[0]
+            if isinstance(first_schema, EIP712JsonSchema):
+                return classifier.classify(first_schema)
+            # url should have been resolved earlier
+    elif isinstance(descriptor.context, ContractContext):
+        abi_classifier = ABIClassifier()
+        if descriptor.context.contract.abi is not None:
+            abi_schema = descriptor.context.contract.abi
+            if abi_schema is not None and not isinstance(abi_schema, AnyUrl):
+                return abi_classifier.classify(abi_schema)
+            # url should have been resolved earlier
+    return None
 
 
 class ClassifyTransactionTypeLinter(Linter):
@@ -34,7 +41,9 @@ class ClassifyTransactionTypeLinter(Linter):
         c = determine_tx_class(descriptor)
         if c is None:
             return None
-        d: Display = descriptor.display
+        d: Display | None = descriptor.display
+        if d is None:
+            return None
         display_format_checker: DisplayFormatChecker = DisplayFormatChecker(c, d)
         linter_outputs = display_format_checker.check()
         for linter_output in linter_outputs:

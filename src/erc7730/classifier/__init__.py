@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from enum import StrEnum, auto
-from typing import Union
+from typing import TypeVar, Generic
 
 from erc7730.model.context import EIP712JsonSchema, AbiJsonSchema
 
@@ -12,7 +12,10 @@ class TxClass(StrEnum):
     WITHDRAW = auto()
 
 
-class Classifier(ABC):
+Schema = TypeVar("Schema", AbiJsonSchema, EIP712JsonSchema)
+
+
+class Classifier(ABC, Generic[Schema]):
     @abstractmethod
-    def classify(self, schema: Union[AbiJsonSchema, EIP712JsonSchema]) -> TxClass | None:
+    def classify(self, schema: Schema) -> TxClass | None:
         raise NotImplementedError()
