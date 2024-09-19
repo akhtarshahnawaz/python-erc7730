@@ -7,7 +7,7 @@ def _append_path(root: str, path: str) -> str:
 
 
 def compute_paths(abi: Function) -> set[str]:
-    """Compute the sets of all reachable paths in a Function."""
+    """Compute the sets of valid paths for a Function."""
 
     def append_paths(path: str, params: list[InputOutput] | list[Component] | None, paths: set[str]) -> None:
         if params:
