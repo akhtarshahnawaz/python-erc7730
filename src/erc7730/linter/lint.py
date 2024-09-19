@@ -3,8 +3,12 @@ from pathlib import Path
 from erc7730.common.pydantic import model_from_json_file
 from erc7730.linter import Linter
 from erc7730.linter.linter_base import MultiLinter
+from erc7730.linter.linter_check_impacts import CheckImpactsLinter
 from erc7730.linter.linter_demo import DemoLinter
 from erc7730.linter.linter_transaction_type_classifier_ai import ClassifyTransactionTypeLinter
+from erc7730.linter.linter_validate_abi import ValidateABILinter
+from erc7730.linter.linter_validate_display_fields import ValidateDisplayFieldsLinter
+from erc7730.linter.linter_validate_structure import ValidateStructureLinter
 from erc7730.model.erc7730_descriptor import ERC7730Descriptor
 from rich import print
 
@@ -13,8 +17,11 @@ from erc7730.model.utils import resolve_external_references
 
 def lint_all(path: Path, demo: bool = False) -> list[Linter.Output]:
     linters: list[Linter] = [
-        # DO_NO_COMMIT: add linters here
+        ValidateABILinter(),
+        ValidateStructureLinter(),
+        ValidateDisplayFieldsLinter(),
         ClassifyTransactionTypeLinter(),
+        CheckImpactsLinter(),
     ]
 
     if demo:

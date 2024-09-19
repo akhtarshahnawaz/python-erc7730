@@ -140,13 +140,6 @@
               "params": {
                 "tokenPath": "details.token"
               }
-            },
-            "details.expiration": {
-              "label": "Valid Until",
-              "format": "date",
-              "params": {
-                "encoding": "timestamp"
-              }
             }
           },
           "required": [
