@@ -1,0 +1,24 @@
+{
+  "context": {
+    "$id": "AggregationRouterV3",
+    "contract": {
+      "chainId": 1,
+      "address": "0x1111111254eeb25477b68fb85ed929f73a960582",
+      "abi": "https://github.com/LedgerHQ/ledger-asset-dapps/blob/08a5eef17eaf94c89ffd084f0d4c14b94969f56b/ethereum/1inch/abis/0x1111111254eeb25477b68fb85ed929f73a960582.abi.json"
+    }
+  },
+  "metadata": {
+    "owner": "1Inch",
+    "info": {
+      "url": "https://1inch.io/",
+      "legalName": "Aave DAO",
+      "lastUpdate": "2020-11-30T09:25:48Z"
+    },
+    "enums": {
+      "interestRateMode": {
+        "1": "stable",
+        "2": "variable"
+      }
+    }
+  }
+}

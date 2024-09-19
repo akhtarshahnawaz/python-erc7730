@@ -1,4 +1,5 @@
-from erc7730.model.abi import Function, Component, InputOutput
+from dataclasses import dataclass
+from erc7730.model.abi import ABI, Function, Component, InputOutput
 from eth_hash.auto import keccak
 
 
@@ -45,3 +46,20 @@ def compute_signature(abi: Function) -> str:
 def compute_selector(abi: Function) -> str:
     """Compute the selector of a Function."""
     return "0x" + keccak(compute_signature(abi).encode()).hex()[:8]
+
+
+@dataclass(kw_only=True)
+class Functions:
+    functions: dict[str, Function]
+    proxy: bool
+
+
+def get_functions(abis: list[ABI]) -> Functions:
+    """Get the functions from a list of ABIs."""
+    functions = Functions(functions={}, proxy=False)
+    for abi in abis:
+        if abi.type == "function":
+            functions.functions[compute_selector(abi)] = abi
+            if abi.name in ("proxyType", "getImplementation", "implementation"):
+                functions.proxy = True
+    return functions
