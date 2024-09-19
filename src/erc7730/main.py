@@ -4,6 +4,7 @@ from typing import Annotated
 import typer
 
 from rich import print
+import urllib.parse
 
 app = typer.Typer(
     name="erc7730",
@@ -35,13 +36,14 @@ def lint(
         p = output.file.name if output.file is not None else "unknown file"
         print(f"[red]{p}: {output.level.name}: {output.title}[/red]\n" f"    {output.message}")
         if gha:
+            msg = urllib.parse.quote(f"{output.title} - {output.message}")
             match output.level:
                 case Linter.Output.Level.INFO:
-                    print(f"::notice file={output.file}::{output.title} - {output.message}")
+                    print(f"::notice file={output.file}::{msg}")
                 case Linter.Output.Level.WARNING:
-                    print(f"::warning file={output.file}::{output.title} - {output.message}")
+                    print(f"::warning file={output.file}::{msg}")
                 case Linter.Output.Level.ERROR:
-                    print(f"::error file={output.file}::{output.title} - {output.message}")
+                    print(f"::error file={output.file}::{msg}")
 
     if not outputs:
         print("[green]no issues found ✅[/green]")
