@@ -1,4 +1,4 @@
-name: continuous integration
+name: lint
 
 on:
   push:
@@ -18,8 +18,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  ci:
-    name: continuous integration
+  lint:
+    name: lint
     runs-on: ledgerhq-shared-small
     timeout-minutes: 60
     steps:
@@ -47,4 +47,4 @@ jobs:
           !fromJSON(steps.skip.outputs.paths_result).project.should_skip ||
           !fromJSON(steps.skip.outputs.paths_result).ci.should_skip ||
           !fromJSON(steps.skip.outputs.paths_result).sources.should_skip
-        run: pdm run erc7730 lint clear-signing-erc7730-registry/registry --gha
+        run: pdm run erc7730 lint demo-registry --gha
