@@ -41,6 +41,7 @@ class ClassifyTransactionTypeLinter(Linter):
         c = determine_tx_class(descriptor)
         if c is None:
             return None
+        out(Linter.Output(title="Transaction Type: ", message=str(c), level=Linter.Output.Level.INFO))
         d: Display | None = descriptor.display
         if d is None:
             return None

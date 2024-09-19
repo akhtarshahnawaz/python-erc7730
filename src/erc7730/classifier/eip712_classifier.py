@@ -8,4 +8,6 @@ from erc7730.classifier import Classifier, TxClass
 class EIP712Classifier(Classifier[EIP712JsonSchema]):
     @override
     def classify(self, schema: EIP712JsonSchema) -> TxClass | None:
-        pass
+        if "permit" in schema.primaryType.lower():
+            return TxClass.PERMIT
+        return None
