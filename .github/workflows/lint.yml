@@ -42,9 +42,4 @@ jobs:
 
       - name: Lint files
         timeout-minutes: 20
-        if: |
-          !steps.skip.outputs.should_skip ||
-          !fromJSON(steps.skip.outputs.paths_result).project.should_skip ||
-          !fromJSON(steps.skip.outputs.paths_result).ci.should_skip ||
-          !fromJSON(steps.skip.outputs.paths_result).sources.should_skip
         run: pdm run erc7730 lint demo-registry --gha
