@@ -33,15 +33,23 @@ def lint(
 
     for output in outputs:
         p = output.file.name if output.file is not None else "unknown file"
-        print(f"[red]{p}: {output.level.name}: {output.title}[/red]\n" f"    {output.message}")
         if gha:
+            msg = f"{output.title} - {output.message}"
             match output.level:
                 case Linter.Output.Level.INFO:
-                    print(f"::notice file={output.file}::{output.title} - {output.message}")
+                    print(f"::notice file={output.file}::{msg}")
                 case Linter.Output.Level.WARNING:
-                    print(f"::warning file={output.file}::{output.title} - {output.message}")
+                    print(f"::warning file={output.file}::{msg}")
                 case Linter.Output.Level.ERROR:
-                    print(f"::error file={output.file}::{output.title} - {output.message}")
+                    print(f"::error file={output.file}::{msg}")
+        else:
+            match output.level:
+                case Linter.Output.Level.INFO:
+                    print(f"[blue]{p}: {output.level.name}: {output.title}[/blue]\n" f"    {output.message}")
+                case Linter.Output.Level.WARNING:
+                    print(f"[yellow]{p}: {output.level.name}: {output.title}[/yellow]\n" f"    {output.message}")
+                case Linter.Output.Level.ERROR:
+                    print(f"[red]{p}: {output.level.name}: {output.title}[/red]\n" f"    {output.message}")
 
     if not outputs:
         print("[green]no issues found ✅[/green]")
