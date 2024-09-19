@@ -51,8 +51,8 @@ class DisplayFormatChecker:
                 ):
                     res.append(
                         Linter.Output(
-                            title="Missing expiration date in displayed fields for permit",
-                            message="",
+                            title="Field not displayed",
+                            message="Missing expiration date in displayed fields for permit",
                             level=Linter.Output.Level.ERROR,
                         )
                     )
