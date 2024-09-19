@@ -8,6 +8,8 @@ from erc7730.linter.linter_transaction_type_classifier_ai import ClassifyTransac
 from erc7730.model.erc7730_descriptor import ERC7730Descriptor
 from rich import print
 
+from erc7730.model.utils import resolve_external_references
+
 
 def lint_all(path: Path, demo: bool = False) -> list[Linter.Output]:
     linters: list[Linter] = [
@@ -41,6 +43,8 @@ def lint_file(path: Path, linter: Linter, out: Linter.OutputAdder) -> None:
         out(output.model_copy(update={"file": path}))
 
     try:
-        linter.lint(model_from_json_file(path, ERC7730Descriptor), adder)
+        descriptor = model_from_json_file(path, ERC7730Descriptor)
+        descriptor = resolve_external_references(descriptor)
+        linter.lint(descriptor, adder)
     except Exception as e:
-        out(Linter.Output(title="Failed to parse", message=str(e), level=Linter.Output.Level.ERROR))
+        out(Linter.Output(file=path, title="Failed to parse", message=str(e), level=Linter.Output.Level.ERROR))

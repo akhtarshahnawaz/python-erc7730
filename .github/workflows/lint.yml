@@ -1,0 +1,50 @@
+name: lint
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+permissions:
+  id-token: write
+  contents: write
+  actions: write
+  pull-requests: write
+  pages: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: lint
+    runs-on: ledgerhq-shared-small
+    timeout-minutes: 60
+    steps:
+
+      - name: Checkout
+        timeout-minutes: 10
+        uses: actions/checkout@v4
+        with:
+          submodules: "true"
+
+      - name: Setup python / PDM
+        timeout-minutes: 10
+        uses: ./.github/actions/pdm
+
+      - name: Install dependencies
+        timeout-minutes: 10
+        run: pdm install --dev --check --frozen-lockfile
+        env:
+          FURY_TOKEN: ${{ secrets.PYPI_DEPLOY_TOKEN}}
+
+      - name: Lint files
+        timeout-minutes: 20
+        if: |
+          !steps.skip.outputs.should_skip ||
+          !fromJSON(steps.skip.outputs.paths_result).project.should_skip ||
+          !fromJSON(steps.skip.outputs.paths_result).ci.should_skip ||
+          !fromJSON(steps.skip.outputs.paths_result).sources.should_skip
+        run: pdm run erc7730 lint demo-registry --gha
