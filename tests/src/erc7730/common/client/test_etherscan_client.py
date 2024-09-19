@@ -2,4 +2,4 @@ from erc7730.common.client.etherscan import get_contract_abis
 
 
 def test_get_contract_abis() -> None:
-    get_contract_abis("0x06012c8cf97bead5deae237070f9587f8e7a266d")
+    assert len(get_contract_abis("0x06012c8cf97bead5deae237070f9587f8e7a266d")) > 0
