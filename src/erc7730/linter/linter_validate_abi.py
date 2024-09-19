@@ -27,8 +27,13 @@ class ValidateABILinter(Linter):
         if not isinstance(context.contract.abi, list):
             raise ValueError("Contract ABIs should have been resolved")
 
-        etherscan_abis = get_contract_abis(context.contract.address)
+        etherscan_abis = get_contract_abis(context.contract.address)  # type:ignore
 
         if context.contract.abi != etherscan_abis:
-            out(Linter.Output(title="Wrong ABI", message="ABI from descriptor does not match ABI from Etherscan",
-                level=Linter.Output.Level.ERROR, ))
+            out(
+                Linter.Output(
+                    title="Wrong ABI",
+                    message="ABI from descriptor does not match ABI from Etherscan",
+                    level=Linter.Output.Level.ERROR,
+                )
+            )
