@@ -4,7 +4,9 @@ from erc7730.model.display import Display, Format
 
 
 def _fields_contain(word: str, fields: set[str]) -> bool:
-    # check if the word is contained in one of the fields
+    """
+    to check if the provided keyword is contained in one of the fields (case insensitive)
+    """
     for field in fields:
         if word.lower() in field.lower():
             return True
@@ -18,9 +20,8 @@ class DisplayFormatChecker:
 
     def _get_all_displayed_fields(self, formats: dict[str, Format]) -> set[str]:
         fields: set[str] = set()
-        for format in formats.values():  # format: Format has fields: Optional[Fields]
+        for format in formats.values():
             if format.fields is not None:
-                # format.fields is a dict[str, Union[FieldDescription, ...]]
                 for field in format.fields.root.keys():
                     fields.add(str(field))
         return fields
@@ -50,7 +51,7 @@ class DisplayFormatChecker:
                 ):
                     res.append(
                         Linter.Output(
-                            title="Missing expiration date in displayed fields",
+                            title="Missing expiration date in displayed fields for permit",
                             message="",
                             level=Linter.Output.Level.ERROR,
                         )
