@@ -34,7 +34,7 @@ def lint(
     for output in outputs:
         p = output.file.name if output.file is not None else "unknown file"
         if gha:
-            msg = f"{output.title} - {output.message}"
+            msg = f"{output.title} {output.message}"
             match output.level:
                 case Linter.Output.Level.INFO:
                     print(f"::notice file={output.file}::{msg}")
