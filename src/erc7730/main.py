@@ -34,9 +34,8 @@ def lint(
 
     for output in outputs:
         p = output.file.name if output.file is not None else "unknown file"
-        print(f"[red]{p}: {output.level.name}: {output.title}[/red]\n" f"    {output.message}")
         if gha:
-            msg = urllib.parse.quote(f"{output.title} - {output.message}")
+            msg = f"{output.title} - {output.message}"
             match output.level:
                 case Linter.Output.Level.INFO:
                     print(f"::notice file={output.file}::{msg}")
@@ -44,6 +43,8 @@ def lint(
                     print(f"::warning file={output.file}::{msg}")
                 case Linter.Output.Level.ERROR:
                     print(f"::error file={output.file}::{msg}")
+        else:
+            print(f"[red]{p}: {output.level.name}: {output.title}[/red]\n" f"    {output.message}")
 
     if not outputs:
         print("[green]no issues found ✅[/green]")
