@@ -37,11 +37,11 @@ def lint(
         if gha:
             match output.level:
                 case Linter.Output.Level.INFO:
-                    print(f"::notice file={output.file}::{output.title}: {output.message}")
+                    print(f"::notice file={output.file}::{output.title} - {output.message}")
                 case Linter.Output.Level.WARNING:
-                    print(f"::warning file={output.file}::{output.title}: {output.message}")
+                    print(f"::warning file={output.file}::{output.title} - {output.message}")
                 case Linter.Output.Level.ERROR:
-                    print(f"::error file={output.file}::{output.title}: {output.message}")
+                    print(f"::error file={output.file}::{output.title} - {output.message}")
 
     if not outputs:
         print("[green]no issues found ✅[/green]")
