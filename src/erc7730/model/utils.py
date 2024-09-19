@@ -1,3 +1,4 @@
+from lib2to3.fixes.fix_input import context
 from typing import Type
 
 from pydantic import AnyUrl, RootModel
@@ -30,7 +31,7 @@ def _resolve_external_references_eip712(descriptor: ERC7730Descriptor) -> ERC773
         else:
             schema_resolved = schema
         schemas_resolved.append(schema_resolved)
-    return descriptor.model_copy(update={"context.eip712.schemas": schemas_resolved})
+    return descriptor.model_copy(update={"context": descriptor.context.model_copy(update={"eip712": descriptor.context.eip712.model_copy(update={"schemas": schemas_resolved})})})
 
 def _resolve_external_references_contract(descriptor: ERC7730Descriptor) -> ERC7730Descriptor:
     abis: Union[AnyUrl, list[ABI]] = descriptor.context.contract.abi # type:ignore
@@ -45,7 +46,7 @@ def _resolve_external_references_contract(descriptor: ERC7730Descriptor) -> ERC7
         pass
     else:
         abis_resolved = abis
-    return descriptor.model_copy(update={"context.contract.abi": abis_resolved})
+    return descriptor.model_copy(update={"context": descriptor.context.model_copy(update={"contract": descriptor.context.contract.model_copy(update={"abi": abis_resolved})})})
 
 def _fix_uri(url: AnyUrl) -> AnyUrl:
     # YOLO hackathon
