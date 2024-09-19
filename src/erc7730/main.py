@@ -37,11 +37,11 @@ def lint(
             # msg = f"{output.title} {output.message}"
             match output.level:
                 case Linter.Output.Level.INFO:
-                    print(f"::notice file={output.file},line=1,col=1,title={output.title}::{output.message}")
+                    print(f"::notice file={output.file},title={output.title}::{output.message}")
                 case Linter.Output.Level.WARNING:
-                    print(f"::warning file={output.file},line=1,col=1,title={output.title}::{output.message}")
+                    print(f"::warning file={output.file},title={output.title}::{output.message}")
                 case Linter.Output.Level.ERROR:
-                    print(f"::error file={output.file},line=1,col=1,title={output.title}::{output.message}")
+                    print(f"::error file={output.file},title={output.title}::{output.message}")
         else:
             match output.level:
                 case Linter.Output.Level.INFO:
