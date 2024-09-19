@@ -74,7 +74,7 @@ class StructFormats(BaseLibraryModel):
     fields: ForwardRef("Fields")  # type: ignore
 
 
-class Fields(RootModel[dict[str, Union[Reference, Field, StructFormats]]]):
+class Fields(RootModel[dict[str, Union[Reference, FieldDescription, Field, StructFormats]]]):
     """todo use StructFormats instead"""
 
 
