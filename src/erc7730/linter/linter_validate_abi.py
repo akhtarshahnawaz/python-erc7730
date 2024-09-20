@@ -28,7 +28,12 @@ class ValidateABILinter(Linter):
         if not isinstance(context.contract.abi, list):
             raise ValueError("Contract ABIs should have been resolved")
 
-        etherscan_abis = get_functions(get_contract_abis(context.contract.address))  # type:ignore
+        if (address := context.contract.address) is None:
+            return
+        if (abis := get_contract_abis(address)) is None:
+            return
+
+        etherscan_abis = get_functions(abis)
         contract_abis = get_functions(context.contract.abi)
 
         if etherscan_abis.proxy:
