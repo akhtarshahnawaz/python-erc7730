@@ -1,5 +1,5 @@
 [project]
-name = "erc7730_hackathon"
+name = "erc7730"
 description = "ERC-7730 descriptors validation and utilities."
 authors = [{ name = "Ledger" }]
 maintainers = [{ name = "Ledger" }]
