@@ -3,7 +3,6 @@ from pathlib import Path
 from erc7730.common.pydantic import model_from_json_file
 from erc7730.linter import Linter
 from erc7730.linter.linter_base import MultiLinter
-from erc7730.linter.linter_check_impacts import CheckImpactsLinter
 from erc7730.linter.linter_transaction_type_classifier_ai import ClassifyTransactionTypeLinter
 from erc7730.linter.linter_validate_abi import ValidateABILinter
 from erc7730.linter.linter_validate_display_fields import ValidateDisplayFieldsLinter
@@ -19,7 +18,6 @@ def lint_all(path: Path) -> list[Linter.Output]:
             ValidateABILinter(),
             ValidateDisplayFieldsLinter(),
             ClassifyTransactionTypeLinter(),
-            CheckImpactsLinter(),
         ]
     )
 
