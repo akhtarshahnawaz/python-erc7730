@@ -1,6 +1,6 @@
 from erc7730.linter.classifier.abi_classifier import ABIClassifier
 from erc7730.linter.classifier.eip712_classifier import EIP712Classifier
-from erc7730.linter.common.display_format_checker import DisplayFormatChecker
+from erc7730.display_format_checker import DisplayFormatChecker
 from erc7730.linter import ERC7730Linter
 from erc7730.model.context import EIP712Context, ContractContext, EIP712JsonSchema
 from erc7730.model.display import Display

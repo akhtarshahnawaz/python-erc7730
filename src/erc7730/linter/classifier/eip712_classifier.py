@@ -6,6 +6,11 @@ from erc7730.linter.classifier import Classifier, TxClass
 
 
 class EIP712Classifier(Classifier[EIP712JsonSchema]):
+    """
+    Given an EIP712 schema, classify the transaction type with some predefined ruleset.
+    (implemented a basic detection of a permit)
+    """
+
     @override
     def classify(self, schema: EIP712JsonSchema) -> TxClass | None:
         if "permit" in schema.primaryType.lower():
