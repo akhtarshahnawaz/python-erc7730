@@ -23,7 +23,7 @@ def _resolve_external_references_eip712(descriptor: ERC7730Descriptor) -> ERC773
         raise ValueError("Missing EIP-712 message schemas")
     for schema in schemas:
         if isinstance(schemas, AnyUrl):
-            resp = requests.get(_fix_uri(schema))  # type:ignore
+            resp = requests.get(_adapt_uri(schema))  # type:ignore
             resp.raise_for_status()
             model: Type[RootModel[EIP712JsonSchema]] = RootModel[EIP712JsonSchema]
             json = resp.json()
@@ -45,7 +45,7 @@ def _resolve_external_references_contract(descriptor: ERC7730Descriptor) -> ERC7
     if abis is None:
         raise ValueError("Missing contract ABI")
     if isinstance(abis, AnyUrl):
-        resp = requests.get(_fix_uri(abis))  # type:ignore
+        resp = requests.get(_adapt_uri(abis))  # type:ignore
         resp.raise_for_status()
         json = resp.json()
         model: Type[RootModel[list[ABI]]] = RootModel[list[ABI]]
@@ -62,6 +62,5 @@ def _resolve_external_references_contract(descriptor: ERC7730Descriptor) -> ERC7
     )
 
 
-def _fix_uri(url: AnyUrl) -> AnyUrl:
-    # YOLO hackathon
+def _adapt_uri(url: AnyUrl) -> AnyUrl:
     return AnyUrl(str(url).replace("https://github.com/", "https://raw.githubusercontent.com/").replace("/blob/", "/"))
