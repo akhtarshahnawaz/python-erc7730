@@ -1,4 +1,4 @@
-from erc7730.classifier import TxClass
+from erc7730.linter.classifier import TxClass
 from erc7730.linter import Linter
 from erc7730.model.display import Display, Format
 

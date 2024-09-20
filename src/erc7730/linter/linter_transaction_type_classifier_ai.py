@@ -1,12 +1,12 @@
-from erc7730.classifier.abi_classifier import ABIClassifier
-from erc7730.classifier.eip712_classifier import EIP712Classifier
-from erc7730.display_format_checker import DisplayFormatChecker
+from erc7730.linter.classifier.abi_classifier import ABIClassifier
+from erc7730.linter.classifier.eip712_classifier import EIP712Classifier
+from erc7730.linter.common.display_format_checker import DisplayFormatChecker
 from erc7730.linter import Linter
 from erc7730.model.context import EIP712Context, ContractContext, EIP712JsonSchema
 from erc7730.model.display import Display
 from erc7730.model.erc7730_descriptor import ERC7730Descriptor
 
-from erc7730.classifier import TxClass
+from erc7730.linter.classifier import TxClass
 from pydantic import AnyUrl
 
 

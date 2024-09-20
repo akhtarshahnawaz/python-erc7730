@@ -1,5 +1,5 @@
 from erc7730.common.abi import compute_paths, compute_selector
-from erc7730.common.erc7730 import compute_eip712_paths, compute_format_paths
+from erc7730.linter.common.paths import compute_eip712_paths, compute_format_paths
 from erc7730.linter import Linter
 from erc7730.model.context import ContractContext, EIP712Context, EIP712JsonSchema
 from erc7730.model.erc7730_descriptor import ERC7730Descriptor
