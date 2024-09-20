@@ -16,6 +16,11 @@ Schema = TypeVar("Schema", AbiJsonSchema, EIP712JsonSchema)
 
 
 class Classifier(ABC, Generic[Schema]):
+    """
+    Given a schema (which is an EIP712 schema or an ABI schema), classify the transaction type
+    with some predefined ruleset.
+    """
+
     @abstractmethod
     def classify(self, schema: Schema) -> TxClass | None:
         raise NotImplementedError()

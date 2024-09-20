@@ -14,6 +14,12 @@ def _fields_contain(word: str, fields: set[str]) -> bool:
 
 
 class DisplayFormatChecker:
+    """
+    Given a transaction class and a display formats, check if all the required fields of a given
+    transaction class are being displayed.
+    If a field is missing emit an error.
+    """
+
     def __init__(self, c: TxClass, d: Display):
         self.c = c
         self.d = d
