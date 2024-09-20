@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, List
 
 import typer
 
@@ -22,13 +22,13 @@ app = typer.Typer(
     """,
 )
 def lint(
-    path: Annotated[Path, typer.Argument(help="The file path")],
+    paths: Annotated[List[Path], typer.Argument(help="The files or directory paths to lint")],
     gha: Annotated[bool, typer.Option(help="Enable Github annotations output")] = False,
 ) -> None:
     from erc7730.linter.lint import lint_all
     from erc7730.linter import Linter
 
-    outputs = lint_all(path)
+    outputs = lint_all(paths)
 
     for output in outputs:
         p = output.file.name if output.file is not None else "unknown file"

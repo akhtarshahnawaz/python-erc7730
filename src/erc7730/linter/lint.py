@@ -12,7 +12,7 @@ from rich import print
 from erc7730.model.utils import resolve_external_references
 
 
-def lint_all(path: Path) -> list[Linter.Output]:
+def lint_all(paths: list[Path]) -> list[Linter.Output]:
     linter = MultiLinter(
         [
             ValidateABILinter(),
@@ -23,14 +23,15 @@ def lint_all(path: Path) -> list[Linter.Output]:
 
     outputs: list[Linter.Output] = []
 
-    if path.is_file():
-        lint_file(path, linter, outputs.append)
-    elif path.is_dir():
-        for file in path.rglob("*.json"):
-            if file.name.startswith("calldata-") or file.name.startswith("eip712-"):
-                lint_file(file, linter, outputs.append)
-    else:
-        raise ValueError(f"Invalid path: {path}")
+    for path in paths:
+        if path.is_file():
+            lint_file(path, linter, outputs.append)
+        elif path.is_dir():
+            for file in path.rglob("*.json"):
+                if file.name.startswith("calldata-") or file.name.startswith("eip712-"):
+                    lint_file(file, linter, outputs.append)
+        else:
+            raise ValueError(f"Invalid path: {path}")
 
     return outputs
 
