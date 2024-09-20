@@ -1,15 +1,15 @@
-# from pydantic import AnyUrl
-# from erc7730.common.pydantic import model_from_json_bytes
-# from erc7730.model.context import EIP712JsonSchema, EIP712Context, EIP712, Domain, EIP712Domain
-# from erc7730.model.erc7730_descriptor import ERC7730Descriptor, EIP712Context
-# from erc7730.model.display import Display, Reference, Field, StructFormats, FieldFormat, Fields, Format, DateParameters, DateEncoding, TokenAmountParameters
-# from eip712 import EIP712DAppDescriptor, EIP712ContractDescriptor, EIP712Mapper, EIP712MessageDescriptor, EIP712Field, EIP712Format
-# import requests
+"""from pydantic import AnyUrl
+from erc7730.common.pydantic import model_from_json_bytes
+from erc7730.model.context import EIP712JsonSchema, EIP712Context, EIP712, Domain, EIP712Domain
+from erc7730.model.erc7730_descriptor import ERC7730Descriptor, EIP712Context
+from erc7730.model.display import Display, Reference, FieldFormat, Fields, Format, DateParameters, DateEncoding, TokenAmountParameters
+from eip712 import EIP712DAppDescriptor, EIP712ContractDescriptor, EIP712Mapper, EIP712MessageDescriptor, EIP712Field, EIP712Format
+import requests
 
-# from erc7730.model.metadata import Metadata
+from erc7730.model.metadata import Metadata
 
 
-"""def to_eip712_mapper(erc7730: ERC7730Descriptor) -> EIP712DAppDescriptor|list[Exception]:
+def to_eip712_mapper(erc7730: ERC7730Descriptor) -> EIP712DAppDescriptor|list[Exception]:
     exceptions = list[Exception]()
     context = erc7730.context
     if (context is not None and isinstance(context, EIP712Context)):
@@ -130,4 +130,5 @@ def to_erc7730_mapper(eip712DappDescriptor: EIP712DAppDescriptor) -> ERC7730Desc
     display = Display(definitions=None, formats = formats)
     metadata = Metadata(owner=None, info=None, token=None, constants=None, enums=None)
     return ERC7730Descriptor(context = context, includes=None, metadata=metadata, display=display)
+
 """
