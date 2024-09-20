@@ -7,7 +7,6 @@ from erc7730.linter.linter_check_impacts import CheckImpactsLinter
 from erc7730.linter.linter_transaction_type_classifier_ai import ClassifyTransactionTypeLinter
 from erc7730.linter.linter_validate_abi import ValidateABILinter
 from erc7730.linter.linter_validate_display_fields import ValidateDisplayFieldsLinter
-from erc7730.linter.linter_validate_structure import ValidateStructureLinter
 from erc7730.model.erc7730_descriptor import ERC7730Descriptor
 from rich import print
 
@@ -18,7 +17,6 @@ def lint_all(path: Path) -> list[Linter.Output]:
     linter = MultiLinter(
         [
             ValidateABILinter(),
-            ValidateStructureLinter(),
             ValidateDisplayFieldsLinter(),
             ClassifyTransactionTypeLinter(),
             CheckImpactsLinter(),
