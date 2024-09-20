@@ -12,13 +12,22 @@ app = typer.Typer(
     ERC-7730 tool.
     """,
 )
+convert_app = typer.Typer(
+    name="convert",
+    no_args_is_help=True,
+    short_help="Commands to convert descriptor files.",
+    help="""
+    Commands to convert descriptor files.
+    """,
+)
+app.add_typer(convert_app)
 
 
 @app.command(
     name="lint",
-    short_help="Validate a descriptor file.",
+    short_help="Validate descriptor files.",
     help="""
-    Validate a descriptor file.
+    Validate descriptor files.
     """,
 )
 def lint(
@@ -56,14 +65,33 @@ def lint(
     raise typer.Exit(1 if outputs else 0)
 
 
-@app.command(
-    name="check",
-    short_help="Reformat a descriptor file.",
+@convert_app.command(
+    name="eip712-to-erc7730",
+    short_help="Convert a legacy EIP-712 descriptor file to an ERC-7730 file.",
     help="""
-    Reformat a descriptor file.
+    Convert a legacy EIP-712 descriptor file to an ERC-7730 file.
     """,
 )
-def format(path: Annotated[Path, typer.Argument(help="The file path")]) -> None:
+def convert_eip712_to_erc7730(
+    input_eip712_path: Annotated[Path, typer.Argument(help="The input EIP-712 file path")],
+    output_erc7730_path: Annotated[Path, typer.Argument(help="The output ERC-7730 file path")],
+) -> None:
+    # TODO BACK-7687: implement conversion from EIP-712 to ERC-7730 descriptors
+    raise NotImplementedError()
+
+
+@convert_app.command(
+    name="erc7730-to-eip712",
+    short_help="Convert an ERC-7730 file to a legacy EIP-712 descriptor file.",
+    help="""
+    Convert an ERC-7730 file to a legacy EIP-712 descriptor file (if applicable).
+    """,
+)
+def convert_erc7730_to_eip712(
+    input_erc7730_path: Annotated[Path, typer.Argument(help="The input ERC-7730 file path")],
+    output_eip712_path: Annotated[Path, typer.Argument(help="The output EIP-712 file path")],
+) -> None:
+    # TODO BACK-7686: implement conversion from ERC-7730 to EIP-712 descriptors
     raise NotImplementedError()
 
 
