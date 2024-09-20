@@ -1,22 +1,24 @@
 from enum import Enum
 from typing import ForwardRef, Union, Optional
-from pydantic import AnyUrl, RootModel
+from pydantic import AnyUrl, RootModel, field_validator
 from erc7730.model.base import BaseLibraryModel
 from erc7730.model.types import ContractAddress, Id
 
 
-class EIP712Domain(BaseLibraryModel):
+class NameType(BaseLibraryModel):
     name: str
     type: str
 
 
-class Types(BaseLibraryModel):
-    EIP712Domain: list[EIP712Domain]
-
-
 class EIP712JsonSchema(BaseLibraryModel):
     primaryType: str
-    types: Types
+    types: dict[str, list[NameType]]
+
+    @field_validator("types")
+    @classmethod
+    def validate_types(cls, value: dict[str, list[NameType]]) -> dict[str, list[NameType]]:
+        # validate that EIP712Domain with expected values
+        return value
 
 
 class EIP712Schema(BaseLibraryModel):
