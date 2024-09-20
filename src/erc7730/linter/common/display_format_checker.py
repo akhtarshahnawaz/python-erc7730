@@ -1,5 +1,5 @@
 from erc7730.linter.classifier import TxClass
-from erc7730.linter import Linter
+from erc7730.linter import ERC7730Linter
 from erc7730.model.display import Display, Format
 
 
@@ -26,22 +26,26 @@ class DisplayFormatChecker:
                     fields.add(str(field))
         return fields
 
-    def check(self) -> list[Linter.Output]:
-        res: list[Linter.Output] = []
+    def check(self) -> list[ERC7730Linter.Output]:
+        res: list[ERC7730Linter.Output] = []
         match self.c:
             case TxClass.PERMIT:
                 formats = self.d.formats
                 fields = self._get_all_displayed_fields(formats)
                 if not _fields_contain("spender", fields):
                     res.append(
-                        Linter.Output(
-                            title="Missing spender in displayed fields", message="", level=Linter.Output.Level.ERROR
+                        ERC7730Linter.Output(
+                            title="Missing spender in displayed fields",
+                            message="",
+                            level=ERC7730Linter.Output.Level.ERROR,
                         )
                     )
                 if not _fields_contain("amount", fields):
                     res.append(
-                        Linter.Output(
-                            title="Missing amount in displayed fields", message="", level=Linter.Output.Level.ERROR
+                        ERC7730Linter.Output(
+                            title="Missing amount in displayed fields",
+                            message="",
+                            level=ERC7730Linter.Output.Level.ERROR,
                         )
                     )
                 if (
@@ -50,10 +54,10 @@ class DisplayFormatChecker:
                     and not _fields_contain("expiration", fields)
                 ):
                     res.append(
-                        Linter.Output(
+                        ERC7730Linter.Output(
                             title="Field not displayed",
                             message="Missing expiration date in displayed fields for permit",
-                            level=Linter.Output.Level.ERROR,
+                            level=ERC7730Linter.Output.Level.ERROR,
                         )
                     )
         return res

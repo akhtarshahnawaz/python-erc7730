@@ -26,7 +26,7 @@ def lint(
     gha: Annotated[bool, typer.Option(help="Enable Github annotations output")] = False,
 ) -> None:
     from erc7730.linter.lint import lint_all
-    from erc7730.linter import Linter
+    from erc7730.linter import ERC7730Linter
 
     outputs = lint_all(paths)
 
@@ -35,19 +35,19 @@ def lint(
         if gha:
             # msg = f"{output.title} {output.message}"
             match output.level:
-                case Linter.Output.Level.INFO:
+                case ERC7730Linter.Output.Level.INFO:
                     print(f"::notice file={output.file},title={output.title}::{output.message}")
-                case Linter.Output.Level.WARNING:
+                case ERC7730Linter.Output.Level.WARNING:
                     print(f"::warning file={output.file},title={output.title}::{output.message}")
-                case Linter.Output.Level.ERROR:
+                case ERC7730Linter.Output.Level.ERROR:
                     print(f"::error file={output.file},title={output.title}::{output.message}")
         else:
             match output.level:
-                case Linter.Output.Level.INFO:
+                case ERC7730Linter.Output.Level.INFO:
                     rprint(f"[blue]{p}: {output.level.name}: {output.title}[/blue]\n" f"    {output.message}")
-                case Linter.Output.Level.WARNING:
+                case ERC7730Linter.Output.Level.WARNING:
                     rprint(f"[yellow]{p}: {output.level.name}: {output.title}[/yellow]\n" f"    {output.message}")
-                case Linter.Output.Level.ERROR:
+                case ERC7730Linter.Output.Level.ERROR:
                     rprint(f"[red]{p}: {output.level.name}: {output.title}[/red]\n" f"    {output.message}")
 
     if not outputs:

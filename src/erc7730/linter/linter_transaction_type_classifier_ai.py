@@ -1,7 +1,7 @@
 from erc7730.linter.classifier.abi_classifier import ABIClassifier
 from erc7730.linter.classifier.eip712_classifier import EIP712Classifier
 from erc7730.linter.common.display_format_checker import DisplayFormatChecker
-from erc7730.linter import Linter
+from erc7730.linter import ERC7730Linter
 from erc7730.model.context import EIP712Context, ContractContext, EIP712JsonSchema
 from erc7730.model.display import Display
 from erc7730.model.erc7730_descriptor import ERC7730Descriptor
@@ -28,21 +28,21 @@ def determine_tx_class(descriptor: ERC7730Descriptor) -> TxClass | None:
     return None
 
 
-class ClassifyTransactionTypeLinter(Linter):
+class ClassifyTransactionTypeLinter(ERC7730Linter):
     """
     - given schema/ABI, classify the transaction type
     - if class found, check descriptor display fields against predefined ruleset
     - possible class (swap, staking withdraw, staking deposit)
     """
 
-    def lint(self, descriptor: ERC7730Descriptor, out: Linter.OutputAdder) -> None:
+    def lint(self, descriptor: ERC7730Descriptor, out: ERC7730Linter.OutputAdder) -> None:
         if descriptor.context is None:
             return None
         c = determine_tx_class(descriptor)
         if c is None:
             # could not determine transaction type
             return None
-        out(Linter.Output(title="Transaction type: ", message=str(c), level=Linter.Output.Level.INFO))
+        out(ERC7730Linter.Output(title="Transaction type: ", message=str(c), level=ERC7730Linter.Output.Level.INFO))
         d: Display | None = descriptor.display
         if d is None:
             return None

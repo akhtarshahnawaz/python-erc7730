@@ -1,17 +1,17 @@
 from erc7730.common.abi import compute_paths, compute_selector
 from erc7730.linter.common.paths import compute_eip712_paths, compute_format_paths
-from erc7730.linter import Linter
+from erc7730.linter import ERC7730Linter
 from erc7730.model.context import ContractContext, EIP712Context, EIP712JsonSchema
 from erc7730.model.erc7730_descriptor import ERC7730Descriptor
 
 
-class ValidateDisplayFieldsLinter(Linter):
+class ValidateDisplayFieldsLinter(ERC7730Linter):
     """
     - for each field of schema/ABI, check that there is a display field
     - for each field, check that display configuration is relevant with field type
     """
 
-    def _validate_eip712_paths(self, descriptor: ERC7730Descriptor, out: Linter.OutputAdder) -> None:
+    def _validate_eip712_paths(self, descriptor: ERC7730Descriptor, out: ERC7730Linter.OutputAdder) -> None:
         if (
             descriptor.context is not None
             and descriptor.display is not None
@@ -24,19 +24,19 @@ class ValidateDisplayFieldsLinter(Linter):
                     primary_types.add(schema.primaryType)
                     if schema.primaryType not in schema.types:
                         out(
-                            Linter.Output(
+                            ERC7730Linter.Output(
                                 title="Invalid EIP712 Schema",
                                 message=f"Primary type `{schema.primaryType}` not found in types.",
-                                level=Linter.Output.Level.ERROR,
+                                level=ERC7730Linter.Output.Level.ERROR,
                             )
                         )
                         continue
                     if schema.primaryType not in descriptor.display.formats:
                         out(
-                            Linter.Output(
+                            ERC7730Linter.Output(
                                 title="Missing Display field",
                                 message=f"Display field for primary type `{schema.primaryType}` is missing.",
-                                level=Linter.Output.Level.WARNING,
+                                level=ERC7730Linter.Output.Level.WARNING,
                             )
                         )
                         continue
@@ -45,41 +45,41 @@ class ValidateDisplayFieldsLinter(Linter):
 
                     for path in eip712_paths - format_paths:
                         out(
-                            Linter.Output(
+                            ERC7730Linter.Output(
                                 title="Missing Display field",
                                 message=f"Display field for path `{path}` is missing for message {schema.primaryType}.",
-                                level=Linter.Output.Level.WARNING,
+                                level=ERC7730Linter.Output.Level.WARNING,
                             )
                         )
                     for path in format_paths - eip712_paths:
                         out(
-                            Linter.Output(
+                            ERC7730Linter.Output(
                                 title="Extra Display field",
                                 message=f"Display field for path `{path}` is not in message {schema.primaryType}.",
-                                level=Linter.Output.Level.ERROR,
+                                level=ERC7730Linter.Output.Level.ERROR,
                             )
                         )
 
                 else:
                     out(
-                        Linter.Output(
+                        ERC7730Linter.Output(
                             title="Missing EIP712 Schema",
                             message=f"EIP712 Schema is missing (found {schema})",
-                            level=Linter.Output.Level.ERROR,
+                            level=ERC7730Linter.Output.Level.ERROR,
                         )
                     )
 
             for fmt in descriptor.display.formats.keys():
                 if fmt not in primary_types:
                     out(
-                        Linter.Output(
+                        ERC7730Linter.Output(
                             title="Invalid Display field",
                             message=f"Format message `{fmt}` is not in EIP712 schemas.",
-                            level=Linter.Output.Level.ERROR,
+                            level=ERC7730Linter.Output.Level.ERROR,
                         )
                     )
 
-    def _validate_abi_paths(self, descriptor: ERC7730Descriptor, out: Linter.OutputAdder) -> None:
+    def _validate_abi_paths(self, descriptor: ERC7730Descriptor, out: ERC7730Linter.OutputAdder) -> None:
         if (
             descriptor.context is not None
             and descriptor.display is not None
@@ -94,10 +94,10 @@ class ValidateDisplayFieldsLinter(Linter):
             for selector, fmt in descriptor.display.formats.items():
                 if selector not in abi_paths_by_selector:
                     out(
-                        Linter.Output(
+                        ERC7730Linter.Output(
                             title="Invalid selector",
                             message=f"Selector {selector} not found in ABI.",
-                            level=Linter.Output.Level.ERROR,
+                            level=ERC7730Linter.Output.Level.ERROR,
                         )
                     )
                     continue
@@ -106,21 +106,21 @@ class ValidateDisplayFieldsLinter(Linter):
 
                 for path in abi_paths - format_paths:
                     out(
-                        Linter.Output(
+                        ERC7730Linter.Output(
                             title="Missing Display field",
                             message=f"Display field for path `{path}` is missing for selector {selector}.",
-                            level=Linter.Output.Level.WARNING,
+                            level=ERC7730Linter.Output.Level.WARNING,
                         )
                     )
                 for path in format_paths - abi_paths:
                     out(
-                        Linter.Output(
+                        ERC7730Linter.Output(
                             title="Invalid Display field",
                             message=f"Display field for path `{path}` is not in selector {selector}.",
-                            level=Linter.Output.Level.ERROR,
+                            level=ERC7730Linter.Output.Level.ERROR,
                         )
                     )
 
-    def lint(self, descriptor: ERC7730Descriptor, out: Linter.OutputAdder) -> None:
+    def lint(self, descriptor: ERC7730Descriptor, out: ERC7730Linter.OutputAdder) -> None:
         self._validate_eip712_paths(descriptor, out)
         self._validate_abi_paths(descriptor, out)

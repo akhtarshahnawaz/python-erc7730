@@ -2,7 +2,7 @@ from pathlib import Path
 
 from erc7730 import ERC_7730_REGISTRY_CALLDATA_PREFIX, ERC_7730_REGISTRY_EIP712_PREFIX
 from erc7730.common.pydantic import model_from_json_file
-from erc7730.linter import Linter
+from erc7730.linter import ERC7730Linter
 from erc7730.linter.linter_base import MultiLinter
 from erc7730.linter.linter_transaction_type_classifier_ai import ClassifyTransactionTypeLinter
 from erc7730.linter.linter_validate_abi import ValidateABILinter
@@ -13,7 +13,7 @@ from rich import print
 from erc7730.model.utils import resolve_external_references
 
 
-def lint_all(paths: list[Path]) -> list[Linter.Output]:
+def lint_all(paths: list[Path]) -> list[ERC7730Linter.Output]:
     linter = MultiLinter(
         [
             ValidateABILinter(),
@@ -22,7 +22,7 @@ def lint_all(paths: list[Path]) -> list[Linter.Output]:
         ]
     )
 
-    outputs: list[Linter.Output] = []
+    outputs: list[ERC7730Linter.Output] = []
 
     for path in paths:
         if path.is_file():
@@ -39,10 +39,10 @@ def lint_all(paths: list[Path]) -> list[Linter.Output]:
     return outputs
 
 
-def lint_file(path: Path, linter: Linter, out: Linter.OutputAdder) -> None:
+def lint_file(path: Path, linter: ERC7730Linter, out: ERC7730Linter.OutputAdder) -> None:
     print(f"checking {path}...")
 
-    def adder(output: Linter.Output) -> None:
+    def adder(output: ERC7730Linter.Output) -> None:
         out(output.model_copy(update={"file": path}))
 
     try:
@@ -50,4 +50,8 @@ def lint_file(path: Path, linter: Linter, out: Linter.OutputAdder) -> None:
         descriptor = resolve_external_references(descriptor)
         linter.lint(descriptor, adder)
     except Exception as e:
-        out(Linter.Output(file=path, title="Failed to parse", message=str(e), level=Linter.Output.Level.ERROR))
+        out(
+            ERC7730Linter.Output(
+                file=path, title="Failed to parse", message=str(e), level=ERC7730Linter.Output.Level.ERROR
+            )
+        )
