@@ -1,6 +1,6 @@
 from erc7730.model.base import BaseLibraryModel
 from erc7730.model.types import Id
-from typing import Any, ForwardRef, Optional, Union
+from typing import Dict, ForwardRef, Optional, Union
 from enum import StrEnum
 from pydantic import RootModel, Field as PydanticField
 
@@ -14,23 +14,32 @@ class Source(StrEnum):
 
 
 class FieldFormat(StrEnum):
+    RAW = "raw"
     ADDRESS_NAME = "addressName"
+    CALL_DATA = "calldata"
+    AMOUNT = "amount"
+    TOKEN_AMOUNT = "tokenAmount"
     NFT_NAME = "nftName"
-    TOKEN_NAME = "tokenAmount"
-    ALLOWANCE_AMOUNT = "allowanceAmount"
-    PERCENTAGE = "percentage"
     DATE = "date"
+    DURATION = "duration"
+    UNIT = "unit"
     ENUM = "enum"
 
 
-class Reference(BaseLibraryModel):
-    ref: str = PydanticField(alias="$ref")
-    params: Optional[dict[str, str]]
+class FieldsParent(BaseLibraryModel):
+    path: str
+
+
+class Reference(FieldsParent):
+    ref: Optional[str] = PydanticField(None, alias="$ref")
+    params: Optional[dict[str, str]] = None
 
 
 class TokenAmountParameters(BaseLibraryModel):
     tokenPath: str
     nativeCurrencyAddress: Optional[str] = None
+    threshold: Optional[str] = None
+    message: Optional[str] = None
 
 
 class DateEncoding(StrEnum):
@@ -42,43 +51,69 @@ class DateParameters(BaseLibraryModel):
     encoding: DateEncoding
 
 
-class PercentageParameters(BaseLibraryModel):
-    magnitude: int
+class AddressNameType(StrEnum):
+    WALLET = "wallet"
+    EOA = "eoa"
+    CONTRACT = "contract"
+    TOKEN = "token"
+    NFT = "nft"
 
 
-class AllowanceAmountParameters(BaseLibraryModel):
-    tokenPath: str
-    threshold: str
-    nativeCurrencyAddress: Optional[str] = None
+class AddressNameSources(StrEnum):
+    LOCAL = "local"
+    ENS = "ens"
 
 
-class Field(BaseLibraryModel):
-    sources: Optional[list[Source]] = None
-    collectionPath: Optional[str] = None
-    tokenAmountParameters: Optional[TokenAmountParameters] = None
-    allowanceAmountParameters: Optional[AllowanceAmountParameters] = None
-    percentageParameters: Optional[PercentageParameters] = None
-    dateParameters: Optional[DateParameters] = None
-    enumParameters: Optional[str] = None
-    params: Optional[dict[str, Any]] = None  # FIXME better typing
+class AddressNameParameters(BaseLibraryModel):
+    type: Optional[AddressNameType] = None
+    sources: Optional[list[AddressNameSources]] = None
+
+
+class CallDataParameters(BaseLibraryModel):
+    selector: Optional[str] = None
+    calleePath: Optional[str] = None
+
+
+class NftNameParameters(BaseLibraryModel):
+    collectionPath: str
+
+
+class UnitParameters(BaseLibraryModel):
+    base: int
+    decimals: Optional[int] = None
+    prefix: Optional[bool] = None
+
+
+class EnumParameters(BaseLibraryModel):
+    field_ref: str = PydanticField(alias="$ref")
 
 
 class FieldDescription(BaseLibraryModel):
-    id: Optional[Id]
-    label: str
-    format: FieldFormat
-    params: Optional[Field]
+    field_id: Optional[Id] = PydanticField(None, alias="$id")
+    label: Optional[str] = None
+    format: Optional[FieldFormat] = None
+    params: Optional[
+        Union[
+            AddressNameParameters,
+            CallDataParameters,
+            TokenAmountParameters,
+            NftNameParameters,
+            DateParameters,
+            UnitParameters,
+            EnumParameters,
+        ]
+    ] = None
 
 
-class StructFormats(BaseLibraryModel):
-    fields: ForwardRef("Fields")  # type: ignore
+class NestedFields(FieldsParent):
+    fields: Optional[ForwardRef("Fields")] = None  # type: ignore
 
 
-class Fields(RootModel[dict[str, Union[Reference, FieldDescription, Field, StructFormats]]]):
-    """todo use StructFormats instead"""
+class Fields(RootModel[Union[Reference, FieldDescription, NestedFields]]):
+    """Fields"""
 
 
-StructFormats.model_rebuild()
+NestedFields.model_rebuild()
 
 
 class Screen(BaseLibraryModel):
@@ -86,13 +121,13 @@ class Screen(BaseLibraryModel):
 
 
 class Format(BaseLibraryModel):
-    id: Optional[Id] = None
-    intent: Optional[str] = None
-    fields: Optional[Fields] = None
+    field_id: Optional[Id] = PydanticField(None, alias="$id")
+    intent: Optional[Union[str, Dict[str, str]]] = None
+    fields: Optional[list[Fields]] = None
     required: Optional[list[str]] = None
     screens: Optional[dict[str, list[Screen]]] = None
 
 
 class Display(BaseLibraryModel):
-    definitions: Optional[dict[str, Field]] = None
+    definitions: Optional[dict[str, FieldDescription]] = None
     formats: dict[str, Format]
