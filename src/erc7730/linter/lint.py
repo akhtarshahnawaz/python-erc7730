@@ -1,5 +1,6 @@
 from pathlib import Path
 
+from erc7730 import ERC_7730_REGISTRY_CALLDATA_PREFIX, ERC_7730_REGISTRY_EIP712_PREFIX
 from erc7730.common.pydantic import model_from_json_file
 from erc7730.linter import Linter
 from erc7730.linter.linter_base import MultiLinter
@@ -28,7 +29,9 @@ def lint_all(paths: list[Path]) -> list[Linter.Output]:
             lint_file(path, linter, outputs.append)
         elif path.is_dir():
             for file in path.rglob("*.json"):
-                if file.name.startswith("calldata-") or file.name.startswith("eip712-"):
+                if file.name.startswith(ERC_7730_REGISTRY_CALLDATA_PREFIX) or file.name.startswith(
+                    ERC_7730_REGISTRY_EIP712_PREFIX
+                ):
                     lint_file(file, linter, outputs.append)
         else:
             raise ValueError(f"Invalid path: {path}")
