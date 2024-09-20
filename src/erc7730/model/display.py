@@ -1,9 +1,8 @@
 from erc7730.model.base import BaseLibraryModel
 from erc7730.model.types import Id
-from typing import ForwardRef, Optional, Union
+from typing import Any, ForwardRef, Optional, Union
 from enum import StrEnum
 from pydantic import RootModel, Field as PydanticField
-
 
 
 class Source(StrEnum):
@@ -12,6 +11,7 @@ class Source(StrEnum):
     CONTRACT = "contract"
     TOKEN = "token"
     COLLECTION = "collection"
+
 
 class FieldFormat(StrEnum):
     ADDRESS_NAME = "addressName"
@@ -22,28 +22,35 @@ class FieldFormat(StrEnum):
     DATE = "date"
     ENUM = "enum"
 
+
 class Reference(BaseLibraryModel):
-    ref: str = PydanticField(alias='$ref')
+    ref: str = PydanticField(alias="$ref")
     params: Optional[dict[str, str]]
+
 
 class TokenAmountParameters(BaseLibraryModel):
     tokenPath: str
     nativeCurrencyAddress: Optional[str] = None
 
+
 class DateEncoding(StrEnum):
-     BLOCKHEIGHT = "blockheight"
-     TIMESTAMP = "timestamp"    
+    BLOCKHEIGHT = "blockheight"
+    TIMESTAMP = "timestamp"
+
 
 class DateParameters(BaseLibraryModel):
     encoding: DateEncoding
 
+
 class PercentageParameters(BaseLibraryModel):
-        magnitude: int
+    magnitude: int
+
 
 class AllowanceAmountParameters(BaseLibraryModel):
     tokenPath: str
     threshold: str
-    nativeCurrencyAddress:Optional[str] = None
+    nativeCurrencyAddress: Optional[str] = None
+
 
 class Field(BaseLibraryModel):
     sources: Optional[list[Source]] = None
@@ -53,6 +60,8 @@ class Field(BaseLibraryModel):
     percentageParameters: Optional[PercentageParameters] = None
     dateParameters: Optional[DateParameters] = None
     enumParameters: Optional[str] = None
+    params: Optional[dict[str, Any]] = None  # FIXME better typing
+
 
 class FieldDescription(BaseLibraryModel):
     id: Optional[Id]
@@ -60,23 +69,28 @@ class FieldDescription(BaseLibraryModel):
     format: FieldFormat
     params: Optional[Field]
 
-class StructFormats(BaseLibraryModel):
-     fields: ForwardRef('Fields') # type: ignore
 
-class Fields(RootModel[dict[str, Union[Reference, Field, StructFormats]]]):
-    """ todo use StructFormats instead """
+class StructFormats(BaseLibraryModel):
+    fields: ForwardRef("Fields")  # type: ignore
+
+
+class Fields(RootModel[dict[str, Union[Reference, FieldDescription, Field, StructFormats]]]):
+    """todo use StructFormats instead"""
+
+
 StructFormats.model_rebuild()
+
 
 class Screen(BaseLibraryModel):
     pass
 
-class Format(BaseLibraryModel):
-     id: Optional[Id] = None
-     intent: Optional[str] = None
-     fields: Optional[Fields] = None
-     required: Optional[list[str]] = None
-     screens: Optional[dict[str, list[Screen]]] = None
 
+class Format(BaseLibraryModel):
+    id: Optional[Id] = None
+    intent: Optional[str] = None
+    fields: Optional[Fields] = None
+    required: Optional[list[str]] = None
+    screens: Optional[dict[str, list[Screen]]] = None
 
 
 class Display(BaseLibraryModel):

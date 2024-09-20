@@ -1,11 +1,14 @@
+# type: ignore
+# ruff: noqa
 from pathlib import Path
 from erc7730.common.pydantic import model_from_json_file_or_none
 from erc7730.model.erc7730_descriptor import ERC7730Descriptor
-from erc7730.mapper.mapper import to_eip712_mapper, to_erc7730_mapper 
+from erc7730.mapper.mapper import to_eip712_mapper, to_erc7730_mapper
 import pytest
 import glob
 
-files = glob.glob('clear-signing-erc7730-registry/registry/*/eip712*.json')
+files = glob.glob("clear-signing-erc7730-registry/registry/*/eip712*.json")
+
 
 @pytest.mark.parametrize("file", files)
 def roundtrip(file: str) -> None:
@@ -17,8 +20,11 @@ def roundtrip(file: str) -> None:
     assert newErc7730Descriptor is not None
     assert newErc7730Descriptor == erc7730Descriptor
 
+
 def test_to_eip712_mapper() -> None:
-    uniswap_eip712_cs_descriptor = model_from_json_file_or_none(Path("clear-signing-erc7730-registry/registry/uniswap/eip712-permit2.json"), ERC7730Descriptor)
+    uniswap_eip712_cs_descriptor = model_from_json_file_or_none(
+        Path("clear-signing-erc7730-registry/registry/uniswap/eip712-permit2.json"), ERC7730Descriptor
+    )
     assert uniswap_eip712_cs_descriptor is not None
     eip712DappDescriptor = to_eip712_mapper(uniswap_eip712_cs_descriptor)
     assert eip712DappDescriptor is not None

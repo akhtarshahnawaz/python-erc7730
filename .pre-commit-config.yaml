@@ -7,33 +7,33 @@ repos:
       - id: sync-pre-commit-deps
         name: sync pre-commit dependencies
 
-#  - repo: https://github.com/astral-sh/ruff-pre-commit
-#    rev: v0.6.4
-#    hooks:
-#      - id: ruff
-#        name: lint code (ruff)
-#        args:
-#          - --fix
-#      - id: ruff-format
-#        name: format code (ruff)
-#
-#  - repo: https://github.com/pre-commit/mirrors-mypy
-#    rev: v1.10.0
-#    hooks:
-#      - id: mypy
-#        name: lint code typing (mypy)
-#        additional_dependencies:
-#          - pandas-stubs
-#          - types-docutils
-#          - types-PyYAML
-#          - types-requests
-#          - types-setuptools
-#          - types-protobuf
-#          - pydantic
-#          - pytest
-#
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.6.6
+    hooks:
+      - id: ruff
+        name: lint code (ruff)
+        args:
+          - --fix
+      - id: ruff-format
+        name: format code (ruff)
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.10.0
+    hooks:
+      - id: mypy
+        name: lint code typing (mypy)
+        additional_dependencies:
+          - pandas-stubs
+          - types-docutils
+          - types-PyYAML
+          - types-requests
+          - types-setuptools
+          - types-protobuf
+          - pydantic==2.9.2
+          - pytest==8.3.3
+
   - repo: https://github.com/pdm-project/pdm
-    rev: 2.18.1
+    rev: 2.18.2
     hooks:
       - id: pdm-lock-check
         name: check pdm lock file

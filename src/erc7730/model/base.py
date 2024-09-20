@@ -1,5 +1,6 @@
 from pydantic import BaseModel, ConfigDict
 
+
 class BaseLibraryModel(BaseModel):
     model_config = ConfigDict(
         strict=True,

@@ -1,1 +1,1 @@
-""" Package implementing all typed method and their validations """
+"""Package implementing all typed method and their validations"""

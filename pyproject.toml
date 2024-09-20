@@ -21,7 +21,9 @@ classifiers = [
 dependencies = [
     "pydantic>=2.8.2",
     "eip712-clearsign>=2.1.0",
-    "requests",
+    "requests>=2.32.3",
+    "typer>=0.12.5",
+    "eth-hash[pycryptodome]>=0.7.0",
 ]
 
 [project.urls]
