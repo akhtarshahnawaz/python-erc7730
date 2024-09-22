@@ -1,8 +1,8 @@
 from erc7730.model.base import BaseLibraryModel
 from erc7730.model.types import Id
-from typing import Dict, ForwardRef, Optional, Union
+from typing import Annotated, Any, Dict, ForwardRef, Optional, Union
 from enum import StrEnum
-from pydantic import RootModel, Field as PydanticField
+from pydantic import Discriminator, RootModel, Field as PydanticField, Tag
 
 
 class Source(StrEnum):
@@ -31,7 +31,7 @@ class FieldsParent(BaseLibraryModel):
 
 
 class Reference(FieldsParent):
-    ref: Optional[str] = PydanticField(None, alias="$ref")
+    ref: str = PydanticField(alias="$ref")
     params: Optional[dict[str, str]] = None
 
 
@@ -90,8 +90,8 @@ class EnumParameters(BaseLibraryModel):
 
 class FieldDescription(BaseLibraryModel):
     field_id: Optional[Id] = PydanticField(None, alias="$id")
-    label: Optional[str] = None
-    format: Optional[FieldFormat] = None
+    label: str
+    format: FieldFormat
     params: Optional[
         Union[
             AddressNameParameters,
@@ -106,11 +106,33 @@ class FieldDescription(BaseLibraryModel):
 
 
 class NestedFields(FieldsParent):
-    fields: Optional[ForwardRef("Fields")] = None  # type: ignore
+    fields: Optional[list[ForwardRef("Field")]] = None  # type: ignore
 
 
-class Fields(RootModel[Union[Reference, FieldDescription, NestedFields]]):
-    """Fields"""
+def get_discriminator_value(v: Any) -> str:
+    if isinstance(v, dict):
+        if v.get("$ref") is not None:
+            return "reference"
+        if v.get("label") is not None and v.get("format") is not None:
+            return "field_description"
+        if v.get("fields") is not None:
+            return "nested_fields"
+    return ""
+
+
+class Field(
+    RootModel[
+        Annotated[
+            Union[
+                Annotated[Reference, Tag("reference")],
+                Annotated[FieldDescription, Tag("field_description")],
+                Annotated[NestedFields, Tag("nested_fields")],
+            ],
+            Discriminator(get_discriminator_value),
+        ]
+    ]
+):
+    """Field"""
 
 
 NestedFields.model_rebuild()
@@ -123,7 +145,7 @@ class Screen(BaseLibraryModel):
 class Format(BaseLibraryModel):
     field_id: Optional[Id] = PydanticField(None, alias="$id")
     intent: Optional[Union[str, Dict[str, str]]] = None
-    fields: Optional[list[Fields]] = None
+    fields: Optional[list[Field]] = None
     required: Optional[list[str]] = None
     screens: Optional[dict[str, list[Screen]]] = None
 

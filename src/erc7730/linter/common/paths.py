@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from erc7730.model.context import EIP712JsonSchema, NameType
-from erc7730.model.display import Fields, Format, Reference, FieldDescription, NestedFields
+from erc7730.model.display import Field, Format, Reference, FieldDescription, NestedFields, TokenAmountParameters
 
 ARRAY_SUFFIX = "[]"
 
@@ -58,20 +58,23 @@ def compute_format_paths(format: Format) -> FormatPaths:
         else:
             paths.data_paths.add(_append_path(root, path))
 
-    def append_paths(path: str, fields: Fields | None) -> None:
+    def append_paths(path: str, fields: Field | None) -> None:
         if fields is not None:
-            for field_name, field in fields.root.items():
-                match field:
-                    case Reference():
-                        pass
-                    case FieldDescription():
-                        add_path(path, field_name)
-                        if field.params and "tokenPath" in field.params:  # FIXME model is not correct
-                            add_path(path, _remove_slicing(field.params["tokenPath"]))
-                    case NestedFields():
-                        append_paths(_append_path(path, field_name), field.fields)
-                    case Reference():
-                        raise NotImplementedError("Unsupported reference field")
+            field = fields.root
+            field_name = ""
+            match field:
+                case Reference():
+                    pass
+                case FieldDescription():
+                    field_name = field.label
+                    add_path(path, field_name)
+                    if field.params and isinstance(field.params, TokenAmountParameters):  # FIXME model is not correct
+                        add_path(path, _remove_slicing(field.params.tokenPath))
+                case NestedFields():
+                    field_name = field.path
+                    append_paths(_append_path(path, field_name), field.fields)  # type: ignore
 
-    append_paths("", format.fields)
+    if format.fields is not None:
+        for f in format.fields:
+            append_paths("", f)
     return paths

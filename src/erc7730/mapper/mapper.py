@@ -6,7 +6,7 @@ from erc7730.model.display import (
     Display,
     Reference,
     FieldFormat,
-    Fields,
+    Field,
     Format,
     DateParameters,
     DateEncoding,
@@ -82,7 +82,7 @@ def to_eip712_mapper(erc7730: ERC7730Descriptor) -> EIP712DAppDescriptor | list[
     return exceptions
 
 
-def parseFields(display: Display, primaryType: str, output: list[EIP712Field], fields: Fields) -> list[EIP712Field]:
+def parseFields(display: Display, primaryType: str, output: list[EIP712Field], fields: Field) -> list[EIP712Field]:
     for _, field in fields:
         if isinstance(field, Reference):
             # get field from definition section
@@ -161,7 +161,7 @@ def to_erc7730_mapper(eip712DappDescriptor: EIP712DAppDescriptor) -> ERC7730Desc
                     eip712Domains.append(EIP712Domain(name=item.label, type=item.format.name))
             types[mapper.label] = eip712Domains
             formats[mapper.label] = Format(
-                id=None, intent=None, fields=Fields(root=fields), required=None, screens=None
+                id=None, intent=None, fields=Field(root=fields), required=None, screens=None
             )
             schemas.append(EIP712JsonSchema(primaryType=mapper.label, types=types))
 
