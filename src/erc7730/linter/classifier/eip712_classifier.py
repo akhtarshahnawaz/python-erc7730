@@ -1,4 +1,4 @@
-from typing import override
+from typing_extensions import override
 
 from erc7730.model.context import EIP712JsonSchema
 
