@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   publish:
-    name: publish python library
+    name: publish artifacts
     timeout-minutes: 60
     runs-on: ledgerhq-shared-small
     steps:
@@ -44,17 +44,29 @@ jobs:
         timeout-minutes: 10
         run: pdm exe
 
-      - name: Generate build attestations
+      - name: Generate library build attestations
         timeout-minutes: 10
         uses: LedgerHQ/actions-security/actions/attest@actions/attest-1
         with:
           subject-path: dist/*
 
-      - name: Sign distribution artifacts
+      - name: Generate application build attestations
+        timeout-minutes: 10
+        uses: LedgerHQ/actions-security/actions/attest@actions/attest-1
+        with:
+          subject-path: build/exe/*
+
+      - name: Sign library artifacts
         timeout-minutes: 10
         uses: LedgerHQ/actions-security/actions/sign-blob@actions/sign-blob-1
         with:
           path: dist
+
+      - name: Sign application artifacts
+        timeout-minutes: 10
+        uses: LedgerHQ/actions-security/actions/sign-blob@actions/sign-blob-1
+        with:
+          path: build/exe
 
       - name: Upload library artifacts to Ledger Artifactory repository
         timeout-minutes: 10
@@ -70,6 +82,6 @@ jobs:
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ github.ref }}
-          file: dist/erc7730
+          file: build/exe/erc7730
           asset_name: erc7730
           overwrite: true
