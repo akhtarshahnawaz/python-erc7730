@@ -35,12 +35,12 @@ class ValidateABILinter(ERC7730Linter):
                 continue
 
             if (abis := get_contract_abis(chain_id, address)) is None:
-                return
+                continue
 
-            etherscan_abis = get_functions(abis)
-            contract_abis = get_functions(context.contract.abi)
+            reference_abis = get_functions(abis)
+            descriptor_abis = get_functions(context.contract.abi)
 
-            if etherscan_abis.proxy:
+            if reference_abis.proxy:
                 out(
                     ERC7730Linter.Output(
                         title="Proxy contract",
@@ -50,8 +50,8 @@ class ValidateABILinter(ERC7730Linter):
                 )
                 return
 
-            for selector, abi in contract_abis.functions.items():
-                if selector not in etherscan_abis.functions:
+            for selector, abi in descriptor_abis.functions.items():
+                if selector not in reference_abis.functions:
                     out(
                         ERC7730Linter.Output(
                             title="Missing function",
@@ -60,7 +60,7 @@ class ValidateABILinter(ERC7730Linter):
                         )
                     )
                 else:
-                    if contract_abis.functions[selector] != etherscan_abis.functions[selector]:
+                    if descriptor_abis.functions[selector] != reference_abis.functions[selector]:
                         out(
                             ERC7730Linter.Output(
                                 title="Function mismatch",
