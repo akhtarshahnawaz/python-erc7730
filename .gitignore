@@ -23,3 +23,4 @@ tests/**/*.xml
 outputs/**/*.html
 exports
 dist/
+build/

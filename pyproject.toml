@@ -49,9 +49,11 @@ test.help = "Run unit/integration tests suite"
 test.shell = "pytest tests"
 all.help = "Run lint+test"
 all.shell = { composite = ["lint", "test"] }
+exe.help = "Package the application into a standalone executable"
+exe.shell = "pdm pack --compress --exe --interpreter '/usr/bin/env python3' --output dist/erc7730"
 
 [tool.pdm]
-plugins = ["sync-pre-commit-lock"]
+plugins = ["sync-pre-commit-lock", "pdm-packer"]
 
 [tool.pdm.dev-dependencies]
 dev = [
