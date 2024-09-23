@@ -36,6 +36,10 @@ jobs:
         env:
           FURY_TOKEN: ${{ secrets.PYPI_DEPLOY_TOKEN}}
 
+      - name: Create directories
+        timeout-minutes: 10
+        run: mkdir -p dist build/exe
+
       - name: Build library artifacts
         timeout-minutes: 10
         run: pdm build
