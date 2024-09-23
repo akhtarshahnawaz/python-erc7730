@@ -36,10 +36,6 @@ jobs:
         env:
           FURY_TOKEN: ${{ secrets.PYPI_DEPLOY_TOKEN}}
 
-      - name: Create directories
-        timeout-minutes: 10
-        run: mkdir -p dist build/exe
-
       - name: Build library artifacts
         timeout-minutes: 10
         run: pdm build
@@ -58,7 +54,7 @@ jobs:
         timeout-minutes: 10
         uses: LedgerHQ/actions-security/actions/attest@actions/attest-1
         with:
-          subject-path: build/exe/*
+          subject-path: erc7730
 
       - name: Sign library artifacts
         timeout-minutes: 10
@@ -70,7 +66,7 @@ jobs:
         timeout-minutes: 10
         uses: LedgerHQ/actions-security/actions/sign-blob@actions/sign-blob-1
         with:
-          path: build/exe
+          path: erc7730
 
       - name: Upload library artifacts to Ledger Artifactory repository
         timeout-minutes: 10
@@ -86,6 +82,6 @@ jobs:
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ github.ref }}
-          file: build/exe/erc7730
+          file: erc7730
           asset_name: erc7730
           overwrite: true
