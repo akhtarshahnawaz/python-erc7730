@@ -28,39 +28,43 @@ class ValidateABILinter(ERC7730Linter):
         if not isinstance(context.contract.abi, list):
             raise ValueError("Contract ABIs should have been resolved")
 
-        if (address := context.contract.address) is None:
+        if (deployments := context.contract.deployments) is None:
             return
-        if (abis := get_contract_abis(address)) is None:
-            return
+        for deployment in deployments.root:
+            if (chain_id := deployment.chainId) is None or (address := deployment.address) is None:
+                continue
 
-        etherscan_abis = get_functions(abis)
-        contract_abis = get_functions(context.contract.abi)
+            if (abis := get_contract_abis(chain_id, address)) is None:
+                continue
 
-        if etherscan_abis.proxy:
-            out(
-                ERC7730Linter.Output(
-                    title="Proxy contract",
-                    message="Contract ABI on Etherscan is likely to be a proxy, validation skipped",
-                    level=ERC7730Linter.Output.Level.INFO,
-                )
-            )
-            return
+            reference_abis = get_functions(abis)
+            descriptor_abis = get_functions(context.contract.abi)
 
-        for selector, abi in contract_abis.functions.items():
-            if selector not in etherscan_abis.functions:
+            if reference_abis.proxy:
                 out(
                     ERC7730Linter.Output(
-                        title="Missing function",
-                        message=f"Function `{selector}/{compute_signature(abi)}` is not defined in Etherscan ABI",
-                        level=ERC7730Linter.Output.Level.ERROR,
+                        title="Proxy contract",
+                        message="Contract ABI on Etherscan is likely to be a proxy, validation skipped",
+                        level=ERC7730Linter.Output.Level.INFO,
                     )
                 )
-            else:
-                if contract_abis.functions[selector] != etherscan_abis.functions[selector]:
+                return
+
+            for selector, abi in descriptor_abis.functions.items():
+                if selector not in reference_abis.functions:
                     out(
                         ERC7730Linter.Output(
-                            title="Function mismatch",
-                            message=f"Function `{selector}/{compute_signature(abi)}` does not match Etherscan ABI",
-                            level=ERC7730Linter.Output.Level.WARNING,
+                            title="Missing function",
+                            message=f"Function `{selector}/{compute_signature(abi)}` is not defined in Etherscan ABI",
+                            level=ERC7730Linter.Output.Level.ERROR,
                         )
                     )
+                else:
+                    if descriptor_abis.functions[selector] != reference_abis.functions[selector]:
+                        out(
+                            ERC7730Linter.Output(
+                                title="Function mismatch",
+                                message=f"Function `{selector}/{compute_signature(abi)}` does not match Etherscan ABI",
+                                level=ERC7730Linter.Output.Level.WARNING,
+                            )
+                        )

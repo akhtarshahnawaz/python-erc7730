@@ -6,7 +6,15 @@ import os
 from erc7730.model.abi import ABI
 
 
-def get_contract_abis(contract_address: str) -> list[ABI] | None:
+def get_contract_abis(chain_id: int, contract_address: str) -> list[ABI] | None:
+    match chain_id:
+        case 1:
+            return get_contract_abis_1(contract_address)
+        case _:
+            return None
+
+
+def get_contract_abis_1(contract_address: str) -> list[ABI] | None:
     if (api_key := os.environ.get("ETHERSCAN_API_KEY")) is None:
         return None
     resp = requests.get(
