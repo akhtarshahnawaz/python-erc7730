@@ -6,14 +6,14 @@ from typing import Union, Optional, Dict
 
 class OwnerInfo(BaseLibraryModel):
     legalName: Optional[str] = None
-    lastUpdate: datetime
+    lastUpdate: Optional[datetime]
     url: AnyUrl
 
 
 class TokenInfo(BaseLibraryModel):
     name: str
     ticker: str
-    magnitude: int
+    decimals: int
 
 
 class Metadata(BaseLibraryModel):
@@ -21,4 +21,4 @@ class Metadata(BaseLibraryModel):
     info: Optional[OwnerInfo] = None
     token: Optional[TokenInfo] = None
     constants: Optional[Dict[str, str]] = None
-    enums: Optional[Union[AnyUrl, Dict[str, Dict[str, str]]]] = None
+    enums: Optional[Dict[str, Union[str, Dict[str, str]]]] = None

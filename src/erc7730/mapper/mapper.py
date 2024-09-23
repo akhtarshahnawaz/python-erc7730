@@ -1,16 +1,12 @@
-# type: ignore
-# ruff: noqa
-from pydantic import AnyUrl
+"""from pydantic import AnyUrl
 from erc7730.common.pydantic import model_from_json_bytes
 from erc7730.model.context import EIP712JsonSchema, EIP712Context, EIP712, Domain, EIP712Domain
 from erc7730.model.erc7730_descriptor import ERC7730Descriptor, EIP712Context
 from erc7730.model.display import (
     Display,
     Reference,
-    Field,
-    StructFormats,
     FieldFormat,
-    Fields,
+    Field,
     Format,
     DateParameters,
     DateEncoding,
@@ -86,7 +82,7 @@ def to_eip712_mapper(erc7730: ERC7730Descriptor) -> EIP712DAppDescriptor | list[
     return exceptions
 
 
-def parseFields(display: Display, primaryType: str, output: list[EIP712Field], fields: Fields) -> list[EIP712Field]:
+def parseFields(display: Display, primaryType: str, output: list[EIP712Field], fields: Field) -> list[EIP712Field]:
     for _, field in fields:
         if isinstance(field, Reference):
             # get field from definition section
@@ -165,7 +161,7 @@ def to_erc7730_mapper(eip712DappDescriptor: EIP712DAppDescriptor) -> ERC7730Desc
                     eip712Domains.append(EIP712Domain(name=item.label, type=item.format.name))
             types[mapper.label] = eip712Domains
             formats[mapper.label] = Format(
-                id=None, intent=None, fields=Fields(root=fields), required=None, screens=None
+                id=None, intent=None, fields=Field(root=fields), required=None, screens=None
             )
             schemas.append(EIP712JsonSchema(primaryType=mapper.label, types=types))
 
@@ -174,3 +170,4 @@ def to_erc7730_mapper(eip712DappDescriptor: EIP712DAppDescriptor) -> ERC7730Desc
     display = Display(definitions=None, formats=formats)
     metadata = Metadata(owner=None, info=None, token=None, constants=None, enums=None)
     return ERC7730Descriptor(context=context, includes=None, metadata=metadata, display=display)
+"""

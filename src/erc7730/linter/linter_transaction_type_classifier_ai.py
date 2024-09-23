@@ -23,7 +23,7 @@ def determine_tx_class(descriptor: ERC7730Descriptor) -> TxClass | None:
         abi_classifier = ABIClassifier()
         if descriptor.context.contract.abi is not None:
             abi_schema = descriptor.context.contract.abi
-            if abi_schema is not None and not isinstance(abi_schema, AnyUrl):
+            if not isinstance(abi_schema, AnyUrl):
                 return abi_classifier.classify(abi_schema)
             # url should have been resolved earlier
     return None
@@ -80,7 +80,7 @@ class DisplayFormatChecker:
         fields: set[str] = set()
         for format in formats.values():
             if format.fields is not None:
-                for field in format.fields.root.keys():
+                for field in format.fields:
                     fields.add(str(field))
         return fields
 
@@ -118,4 +118,6 @@ class DisplayFormatChecker:
                             level=ERC7730Linter.Output.Level.ERROR,
                         )
                     )
+            case _:
+                pass
         return res
