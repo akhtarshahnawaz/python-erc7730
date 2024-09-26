@@ -42,22 +42,22 @@ def lint(
     for output in outputs:
         p = output.file.name if output.file is not None else "unknown file"
         if gha:
-            # msg = f"{output.title} {output.message}"
+            msg = output.message.replace("\n", "%0A")
             match output.level:
                 case ERC7730Linter.Output.Level.INFO:
-                    print(f"::notice file={output.file},title={output.title}::{output.message}")
+                    print(f"::notice file={p},title={output.title}::{msg}")
                 case ERC7730Linter.Output.Level.WARNING:
-                    print(f"::warning file={output.file},title={output.title}::{output.message}")
+                    print(f"::warning file={p},title={output.title}::{msg}")
                 case ERC7730Linter.Output.Level.ERROR:
-                    print(f"::error file={output.file},title={output.title}::{output.message}")
+                    print(f"::error file={p},title={output.title}::{msg}")
         else:
             match output.level:
                 case ERC7730Linter.Output.Level.INFO:
-                    rprint(f"[blue]{p}: {output.level.name}: {output.title}[/blue]\n" f"    {output.message}")
+                    rprint(f"[blue]{p}: {output.level.name}: {output.title}[/blue]\n    {output.message}")
                 case ERC7730Linter.Output.Level.WARNING:
-                    rprint(f"[yellow]{p}: {output.level.name}: {output.title}[/yellow]\n" f"    {output.message}")
+                    rprint(f"[yellow]{p}: {output.level.name}: {output.title}[/yellow]\n    {output.message}")
                 case ERC7730Linter.Output.Level.ERROR:
-                    rprint(f"[red]{p}: {output.level.name}: {output.title}[/red]\n" f"    {output.message}")
+                    rprint(f"[red]{p}: {output.level.name}: {output.title}[/red]\n    {output.message}")
 
     if not outputs:
         rprint("[green]no issues found ✅[/green]")
