@@ -45,11 +45,11 @@ def lint(
             msg = output.message.replace("\n", "%0A")
             match output.level:
                 case ERC7730Linter.Output.Level.INFO:
-                    print(f"::notice file={p},title={output.title}::{msg}")
+                    print(f"::notice file={output.file},title={output.title}::{msg}")
                 case ERC7730Linter.Output.Level.WARNING:
-                    print(f"::warning file={p},title={output.title}::{msg}")
+                    print(f"::warning file={output.file},title={output.title}::{msg}")
                 case ERC7730Linter.Output.Level.ERROR:
-                    print(f"::error file={p},title={output.title}::{msg}")
+                    print(f"::error file={output.file},title={output.title}::{msg}")
         else:
             match output.level:
                 case ERC7730Linter.Output.Level.INFO:
