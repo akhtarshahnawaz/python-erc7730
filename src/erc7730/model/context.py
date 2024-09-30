@@ -37,8 +37,8 @@ class Domain(Model):
 
 
 class Deployment(Model):
-    chainId: int | None = None
-    address: str | None = None
+    chainId: int
+    address: str
 
 
 class Deployments(RootModel[list[Deployment]]):
@@ -47,9 +47,9 @@ class Deployments(RootModel[list[Deployment]]):
 
 class EIP712(Model):
     domain: Domain | None = None
-    schemas: list[EIP712JsonSchema | AnyUrl] | None = None
+    schemas: list[EIP712JsonSchema | AnyUrl]
     domainSeparator: str | None = None
-    deployments: Deployments | None = None
+    deployments: Deployments
 
 
 class EIP712DomainBinding(Model):
@@ -100,8 +100,8 @@ class Factory(Model):
 
 
 class Contract(Model):
-    abi: AnyUrl | AbiJsonSchema | None = None
-    deployments: Deployments | None = None
+    abi: AnyUrl | AbiJsonSchema
+    deployments: Deployments
     addressMatcher: AnyUrl | None = None
     factory: Factory | None = None
 

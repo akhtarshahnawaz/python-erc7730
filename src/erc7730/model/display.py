@@ -127,24 +127,24 @@ def get_param_discriminator(v: Any) -> str | None:
     return None
 
 
+FieldParameters = Annotated[
+    Annotated[AddressNameParameters, Tag("address_name")]
+    | Annotated[CallDataParameters, Tag("call_data")]
+    | Annotated[TokenAmountParameters, Tag("token_amount")]
+    | Annotated[NftNameParameters, Tag("nft_name")]
+    | Annotated[DateParameters, Tag("date")]
+    | Annotated[UnitParameters, Tag("unit")]
+    | Annotated[EnumParameters, Tag("enum")],
+    Discriminator(get_param_discriminator),
+]
+
+
 class FieldDescription(Model):
-    path: Path | None = None
-    field_id: Id | None = PydanticField(None, alias="$id")
+    id: Id | None = PydanticField(None, alias="$id")
+    path: Path
     label: str
     format: FieldFormat | None
-    params: (
-        Annotated[
-            Annotated[AddressNameParameters, Tag("address_name")]
-            | Annotated[CallDataParameters, Tag("call_data")]
-            | Annotated[TokenAmountParameters, Tag("token_amount")]
-            | Annotated[NftNameParameters, Tag("nft_name")]
-            | Annotated[DateParameters, Tag("date")]
-            | Annotated[UnitParameters, Tag("unit")]
-            | Annotated[EnumParameters, Tag("enum")],
-            Discriminator(get_param_discriminator),
-        ]
-        | None
-    ) = None
+    params: FieldParameters | None = None
 
 
 class NestedFields(FieldsParent):
