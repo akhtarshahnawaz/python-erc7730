@@ -106,6 +106,9 @@ omit = ["tests/*"]
 [tool.ruff]
 line-length = 120
 
+[tool.ruff.lint]
+select = ["E", "F", "N", "UP", "B", "SIM", "I", "TID", "RUF"] # see https://docs.astral.sh/ruff/rules
+
 [tool.mypy]
 plugins = ["pydantic.mypy"]
 follow_imports = "silent"
@@ -125,4 +128,4 @@ exclude_dirs = ["tests"]
 
 [tool.codespell]
 ignore-words = ".codespellignore"
-skip = "inputs/*,outputs/*,pdm.lock"
+skip = "pdm.lock"
