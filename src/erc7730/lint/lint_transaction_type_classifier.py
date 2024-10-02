@@ -1,14 +1,12 @@
 from typing import final, override
 
-from pydantic import AnyUrl
-
 from erc7730.lint import ERC7730Linter
 from erc7730.lint.classifier import TxClass
 from erc7730.lint.classifier.abi_classifier import ABIClassifier
 from erc7730.lint.classifier.eip712_classifier import EIP712Classifier
-from erc7730.model.context import ContractContext, EIP712Context, EIP712JsonSchema
-from erc7730.model.descriptor import ERC7730Descriptor
-from erc7730.model.display import Display, Format
+from erc7730.model.resolved.context import EIP712JsonSchema, ResolvedContractContext, ResolvedEIP712Context
+from erc7730.model.resolved.descriptor import ResolvedERC7730Descriptor
+from erc7730.model.resolved.display import ResolvedDisplay, ResolvedFormat
 
 
 @final
@@ -19,7 +17,7 @@ class ClassifyTransactionTypeLinter(ERC7730Linter):
     """
 
     @override
-    def lint(self, descriptor: ERC7730Descriptor, out: ERC7730Linter.OutputAdder) -> None:
+    def lint(self, descriptor: ResolvedERC7730Descriptor, out: ERC7730Linter.OutputAdder) -> None:
         if descriptor.context is None:
             return None
         if (tx_class := self._determine_tx_class(descriptor)) is None:
@@ -38,21 +36,18 @@ class ClassifyTransactionTypeLinter(ERC7730Linter):
             out(linter_output)
 
     @classmethod
-    def _determine_tx_class(cls, descriptor: ERC7730Descriptor) -> TxClass | None:
-        if isinstance(descriptor.context, EIP712Context):
+    def _determine_tx_class(cls, descriptor: ResolvedERC7730Descriptor) -> TxClass | None:
+        if isinstance(descriptor.context, ResolvedEIP712Context):
             classifier = EIP712Classifier()
             if descriptor.context.eip712.schemas is not None:
                 first_schema = descriptor.context.eip712.schemas[0]
                 if isinstance(first_schema, EIP712JsonSchema):
                     return classifier.classify(first_schema)
                 # url should have been resolved earlier
-        elif isinstance(descriptor.context, ContractContext):
+        elif isinstance(descriptor.context, ResolvedContractContext):
             abi_classifier = ABIClassifier()
             if descriptor.context.contract.abi is not None:
-                abi_schema = descriptor.context.contract.abi
-                if not isinstance(abi_schema, AnyUrl):
-                    return abi_classifier.classify(abi_schema)
-                # url should have been resolved earlier
+                return abi_classifier.classify(descriptor.context.contract.abi)
         return None
 
 
@@ -62,7 +57,7 @@ class DisplayFormatChecker:
     If a field is missing emit an error.
     """
 
-    def __init__(self, tx_class: TxClass, display: Display):
+    def __init__(self, tx_class: TxClass, display: ResolvedDisplay):
         self.tx_class = tx_class
         self.display = display
 
@@ -105,7 +100,7 @@ class DisplayFormatChecker:
         return res
 
     @classmethod
-    def _get_all_displayed_fields(cls, formats: dict[str, Format]) -> set[str]:
+    def _get_all_displayed_fields(cls, formats: dict[str, ResolvedFormat]) -> set[str]:
         fields: set[str] = set()
         for format in formats.values():
             if format.fields is not None:

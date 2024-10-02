@@ -1,11 +1,8 @@
 from abc import ABC, abstractmethod
-from collections.abc import Callable
 from enum import IntEnum, auto
 from typing import Generic, TypeVar
 
 from pydantic import BaseModel
-
-from erc7730.model.descriptor import ERC7730Descriptor
 
 InputType = TypeVar("InputType", bound=BaseModel)
 OutputType = TypeVar("OutputType", bound=BaseModel)
@@ -39,22 +36,22 @@ class ERC7730Converter(ABC, Generic[InputType, OutputType]):
         class Level(IntEnum):
             """ERC7730Converter error level."""
 
-            ERROR = auto()
+            WARNING = auto()
             """Indicates a non-fatal error: descriptor can be partially converted, but some parts will be lost."""
 
-            FATAL = auto()
+            ERROR = auto()
             """Indicates a fatal error: descriptor cannot be converted."""
 
-        level: Level = Level.ERROR
+        level: Level
         message: str
 
-    ErrorAdder = Callable[[Error], None]
-    """ERC7730Converter output sink."""
+    class ErrorAdder(ABC):
+        """ERC7730Converter output sink."""
 
+        @abstractmethod
+        def warning(self, message: str) -> None:
+            raise NotImplementedError()
 
-class FromERC7730Converter(ERC7730Converter[ERC7730Descriptor, OutputType], ABC):
-    """Converter from ERC-7730 to another format."""
-
-
-class ToERC7730Converter(ERC7730Converter[InputType, ERC7730Descriptor], ABC):
-    """Converter from another format to ERC-7730."""
+        @abstractmethod
+        def error(self, message: str) -> None:
+            raise NotImplementedError()

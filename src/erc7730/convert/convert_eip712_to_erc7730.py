@@ -8,28 +8,37 @@ from eip712 import (
 )
 from pydantic import AnyUrl
 
-from erc7730.convert import ERC7730Converter, ToERC7730Converter
-from erc7730.model.context import EIP712, Deployment, Deployments, Domain, EIP712Context, EIP712JsonSchema, NameType
-from erc7730.model.descriptor import ERC7730Descriptor
+from erc7730.convert import ERC7730Converter
+from erc7730.model.context import Deployment, Domain, EIP712JsonSchema, NameType
 from erc7730.model.display import (
-    Display,
-    Field,
-    FieldDescription,
     FieldFormat,
-    Format,
     TokenAmountParameters,
+)
+from erc7730.model.input.context import InputEIP712, InputEIP712Context
+from erc7730.model.input.descriptor import InputERC7730Descriptor
+from erc7730.model.input.display import (
+    InputDisplay,
+    InputFieldDescription,
+    InputFormat,
+    InputNestedFields,
+    InputReference,
 )
 from erc7730.model.metadata import Metadata
 from erc7730.model.types import ContractAddress
 
 
 @final
-class EIP712toERC7730Converter(ToERC7730Converter[EIP712DAppDescriptor]):
+class EIP712toERC7730Converter(ERC7730Converter[EIP712DAppDescriptor, InputERC7730Descriptor]):
     """Converts Ledger legacy EIP-712 descriptor to ERC-7730 descriptor."""
 
     @override
-    def convert(self, descriptor: EIP712DAppDescriptor, error: ERC7730Converter.ErrorAdder) -> ERC7730Descriptor | None:
-        # FIXME this code flattens all messages in first contract
+    def convert(
+        self, descriptor: EIP712DAppDescriptor, error: ERC7730Converter.ErrorAdder
+    ) -> InputERC7730Descriptor | None:
+        # FIXME this code flattens all messages in first contract.
+        #  converter must be changed to output a list[InputERC7730Descriptor]
+        #  1 output InputERC7730Descriptor per input contract
+
         verifying_contract: ContractAddress | None = None
         contract_name = descriptor.name
         if len(descriptor.contracts) > 0:
@@ -37,13 +46,9 @@ class EIP712toERC7730Converter(ToERC7730Converter[EIP712DAppDescriptor]):
             contract_name = descriptor.contracts[0].name  # FIXME
 
         if verifying_contract is None:
-            return error(
-                ERC7730Converter.Error(
-                    level=ERC7730Converter.Error.Level.FATAL, message="verifying_contract is undefined"
-                )
-            )
+            return error.error("verifying_contract is undefined")
 
-        formats = dict[str, Format]()
+        formats = dict[str, InputFormat]()
         schemas = list[EIP712JsonSchema | AnyUrl]()
         for contract in descriptor.contracts:
             for message in contract.messages:
@@ -56,27 +61,25 @@ class EIP712toERC7730Converter(ToERC7730Converter[EIP712DAppDescriptor]):
                         types=schema,
                     )
                 )
-                fields = [Field(self._convert_field(field)) for field in mapper.fields]
-                formats[mapper.label] = Format(
+                fields = [self._convert_field(field) for field in mapper.fields]
+                formats[mapper.label] = InputFormat(
                     intent=None,  # FIXME
                     fields=fields,
                     required=None,  # FIXME
                     screens=None,
                 )
 
-        return ERC7730Descriptor(
-            context=(
-                EIP712Context(
-                    eip712=EIP712(
-                        domain=Domain(
-                            name=descriptor.name,
-                            version=None,  # FIXME
-                            chainId=descriptor.chain_id,
-                            verifyingContract=verifying_contract,
-                        ),
-                        schemas=schemas,
-                        deployments=Deployments([Deployment(chainId=descriptor.chain_id, address=verifying_contract)]),
-                    )
+        return InputERC7730Descriptor(
+            context=InputEIP712Context(
+                eip712=InputEIP712(
+                    domain=Domain(
+                        name=descriptor.name,
+                        version=None,  # FIXME
+                        chainId=descriptor.chain_id,
+                        verifyingContract=verifying_contract,
+                    ),
+                    schemas=schemas,
+                    deployments=[Deployment(chainId=descriptor.chain_id, address=verifying_contract)],
                 )
             ),
             metadata=Metadata(
@@ -86,28 +89,27 @@ class EIP712toERC7730Converter(ToERC7730Converter[EIP712DAppDescriptor]):
                 constants=None,  # FIXME
                 enums=None,  # FIXME
             ),
-            display=Display(
+            display=InputDisplay(
                 definitions=None,  # FIXME
                 formats=formats,
             ),
         )
 
     @classmethod
-    def _convert_field(cls, field: EIP712Field) -> FieldDescription:
+    def _convert_field(cls, field: EIP712Field) -> InputFieldDescription | InputReference | InputNestedFields:
         match field.format:
+            case EIP712Format.AMOUNT if field.assetPath is not None:
+                return InputFieldDescription(
+                    label=field.label,
+                    format=FieldFormat.TOKEN_AMOUNT,
+                    params=TokenAmountParameters(tokenPath=field.assetPath),
+                    path=field.path,
+                )
             case EIP712Format.AMOUNT:
-                if field.assetPath is not None:
-                    return FieldDescription(
-                        label=field.label,
-                        format=FieldFormat.TOKEN_AMOUNT,
-                        params=TokenAmountParameters(tokenPath=field.assetPath),
-                        path=field.path,
-                    )
-                else:
-                    return FieldDescription(label=field.label, format=FieldFormat.AMOUNT, params=None, path=field.path)
+                return InputFieldDescription(label=field.label, format=FieldFormat.AMOUNT, params=None, path=field.path)
             case EIP712Format.DATETIME:
-                return FieldDescription(label=field.label, format=FieldFormat.DATE, params=None, path=field.path)
+                return InputFieldDescription(label=field.label, format=FieldFormat.DATE, params=None, path=field.path)
             case EIP712Format.RAW | None:
-                return FieldDescription(label=field.label, format=FieldFormat.RAW, params=None, path=field.path)
+                return InputFieldDescription(label=field.label, format=FieldFormat.RAW, params=None, path=field.path)
             case _:
                 assert_never(field.format)
