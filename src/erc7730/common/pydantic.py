@@ -36,7 +36,7 @@ def model_to_json_dict(obj: ModelType) -> dict[str, Any]:
 
 def model_to_json_str(obj: ModelType) -> str:
     """Serialize a pydantic model into a JSON string."""
-    return obj.model_dump_json(by_alias=True, exclude_none=True)
+    return obj.model_dump_json(by_alias=True, exclude_none=True, indent=2)
 
 
 def model_to_json_file(path: Path, model: ModelType) -> None:
