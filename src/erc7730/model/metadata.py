@@ -7,8 +7,7 @@ JSON schema: https://github.com/LedgerHQ/clear-signing-erc7730-registry/blob/mas
 
 from datetime import datetime
 
-from pydantic import Field
-from pydantic.v1 import AnyUrl
+from pydantic import AnyUrl, Field
 
 from erc7730.model.base import Model
 
