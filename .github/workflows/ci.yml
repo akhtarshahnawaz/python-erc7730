@@ -20,7 +20,7 @@ concurrency:
 jobs:
   ci:
     name: continuous integration
-    runs-on: ledgerhq-shared-small
+    runs-on: public-ledgerhq-shared-small
     timeout-minutes: 60
     steps:
 

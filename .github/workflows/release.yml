@@ -13,7 +13,7 @@ jobs:
   publish:
     name: publish artifacts
     timeout-minutes: 60
-    runs-on: ledgerhq-shared-small
+    runs-on: public-ledgerhq-shared-small
     steps:
       - name: Login to Ledger Artifactory
         timeout-minutes: 10
