@@ -78,6 +78,14 @@ jobs:
             dependencies
           add_comment: true
 
+      - name: Get API keys
+        timeout-minutes: 10
+        shell: bash
+        run: |
+          cat << EOF | jq -r 'to_entries[] | select(.key|endswith("_API_KEY")) | "\(.key)=\(.value)"' >> "$GITHUB_ENV"
+          ${{ toJSON(secrets) }}
+          EOF
+
       - name: Setup pre-commit cache
         timeout-minutes: 10
         uses: actions/cache@v4
