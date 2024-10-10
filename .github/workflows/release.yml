@@ -68,5 +68,5 @@ jobs:
         timeout-minutes: 10
         env:
           PDM_PUBLISH_USERNAME: __token__
-          PDM_PUBLISH_PASSWORD: ${{ secrets.PYPI_FULL_ACCESS_TOKEN }}
+          PDM_PUBLISH_PASSWORD: ${{ secrets.PYPI_PUSH_TOKEN }}
         run: pdm publish --no-build
