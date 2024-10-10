@@ -56,14 +56,14 @@ class ValidateDisplayFieldsLinter(ERC7730Linter):
                             out.debug(
                                 title="Optional Display field missing",
                                 message=f"Display field for path `{path}` is missing for message {schema.primaryType}. "
-                                f"If intentionally excluded, please add it to `exclude` list to avoid this "
+                                f"If intentionally excluded, please add it to `excluded` list to avoid this "
                                 f"warning.",
                             )
                         else:
                             out.warning(
                                 title="Missing Display field",
                                 message=f"Display field for path `{path}` is missing for message {schema.primaryType}. "
-                                f"If intentionally excluded, please add it to `exclude` list to avoid this "
+                                f"If intentionally excluded, please add it to `excluded` list to avoid this "
                                 f"warning.",
                             )
                     for path in format_paths - eip712_paths:
@@ -129,13 +129,13 @@ class ValidateDisplayFieldsLinter(ERC7730Linter):
                         out.debug(
                             title="Optional Display field missing",
                             message=f"Display field for path `{path}` is missing for selector {function}. If "
-                            f"intentionally excluded, please add it to `exclude` list to avoid this warning.",
+                            f"intentionally excluded, please add it to `excluded` list to avoid this warning.",
                         )
                     else:
                         out.warning(
                             title="Missing Display field",
                             message=f"Display field for path `{path}` is missing for selector {function}. If "
-                            f"intentionally excluded, please add it to `exclude` list to avoid this warning.",
+                            f"intentionally excluded, please add it to `excluded` list to avoid this warning.",
                         )
                 for path in format_paths - abi_paths:
                     out.error(
