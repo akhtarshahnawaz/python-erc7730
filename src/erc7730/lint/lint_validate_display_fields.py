@@ -49,7 +49,13 @@ class ValidateDisplayFieldsLinter(ERC7730Linter):
                     excluded = primary_type_format.excluded or []
 
                     for path in eip712_paths - format_paths:
-                        if path in excluded:
+
+                        allowed = False
+                        for excluded_path in excluded:
+                            if path.startswith(excluded_path):
+                                allowed = True
+                                break
+                        if allowed:
                             continue
 
                         if any(re.fullmatch(regex, path) for regex in AUTHORIZED_MISSING_DISPLAY_FIELDS_REGEX):
@@ -122,7 +128,13 @@ class ValidateDisplayFieldsLinter(ERC7730Linter):
                 function = cls._display(selector, keccak)
 
                 for path in abi_paths - format_paths:
-                    if path in excluded:
+
+                    allowed = False
+                    for excluded_path in excluded:
+                        if path.startswith(excluded_path):
+                            allowed = True
+                            break
+                    if allowed:
                         continue
 
                     if not any(re.fullmatch(regex, path) for regex in AUTHORIZED_MISSING_DISPLAY_FIELDS_REGEX):
