@@ -67,5 +67,5 @@ jobs:
       - name: Upload library artifacts to PyPI
         timeout-minutes: 10
         env:
-          PDM_PUBLISH_PASSWORD: ${{ secrets.PYPI_FULL_ACCESS_TOKEN }}
+          PDM_PUBLISH_PASSWORD: ${{ secrets.PYPI_PUBLIC_API_TOKEN }}
         run: pdm publish --no-build
