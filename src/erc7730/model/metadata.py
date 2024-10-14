@@ -7,7 +7,8 @@ JSON schema: https://github.com/LedgerHQ/clear-signing-erc7730-registry/blob/mas
 
 from datetime import datetime
 
-from pydantic import AnyUrl, Field
+from pydantic import Field
+from pydantic_string_url import HttpUrl
 
 from erc7730.model.base import Model
 
@@ -32,7 +33,7 @@ class OwnerInfo(Model):
         description="The date of the last update of the contract / message.",
     )
 
-    url: AnyUrl = Field(title="Owner URL", description="URL with more info on the entity the user interacts with.")
+    url: HttpUrl = Field(title="Owner URL", description="URL with more info on the entity the user interacts with.")
 
 
 class TokenInfo(Model):
@@ -52,7 +53,10 @@ class TokenInfo(Model):
     )
 
     decimals: int = Field(
-        title="Token Decimals", description="The number of decimals of the token ticker, used to display amounts."
+        title="Token Decimals",
+        description="The number of decimals of the token ticker, used to display amounts.",
+        ge=0,
+        le=255,
     )
 
 
