@@ -1,5 +1,4 @@
 {
-    "$schema": "../../../registries/clear-signing-erc7730-registry/specs/erc7730-v1.schema.json",
     "context": {
         "eip712": {
             "deployments": [
@@ -37,17 +36,37 @@
             ]
         }
     },
-    "metadata": {},
+    "metadata": {
+        "enums": {}
+    },
     "display": {
         "formats": {
             "TestPrimaryType": {
                 "fields": [
                     {
-                        "path": "param1",
+                        "path": {
+                            "type": "data",
+                            "absolute": true,
+                            "elements": [
+                                {
+                                    "type": "field",
+                                    "identifier": "param1"
+                                }
+                            ]
+                        },
                         "label": "Param 1",
                         "format": "nftName",
                         "params": {
-                            "collectionPath": "0x0000000000000000000000000000000000000001"
+                            "collectionPath": {
+                                "type": "data",
+                                "absolute": true,
+                                "elements": [
+                                    {
+                                        "type": "field",
+                                        "identifier": "0x0000000000000000000000000000000000000001"
+                                    }
+                                ]
+                            }
                         }
                     }
                 ]

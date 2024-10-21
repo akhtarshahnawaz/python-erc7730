@@ -1,5 +1,4 @@
 {
-    "$schema": "../../../registries/clear-signing-erc7730-registry/specs/erc7730-v1.schema.json",
     "context": {
         "eip712": {
             "deployments": [
@@ -39,9 +38,13 @@
     },
     "metadata": {
         "enums": {
-            "testEnum": {
+            "local": {
                 "1": "stable",
                 "2": "variable"
+            },
+            "remote": {
+                "1": "foo",
+                "2": "bar"
             }
         }
     },
@@ -50,11 +53,37 @@
             "TestPrimaryType": {
                 "fields": [
                     {
-                        "path": "param1",
-                        "label": "Param 1",
+                        "path": {
+                            "type": "data",
+                            "absolute": true,
+                            "elements": [
+                                {
+                                    "type": "field",
+                                    "identifier": "param1"
+                                }
+                            ]
+                        },
+                        "label": "Using a local enum",
                         "format": "enum",
                         "params": {
-                            "$ref": "$.metadata.enums.testEnum"
+                            "enumId": "local"
+                        }
+                    },
+                    {
+                        "path": {
+                            "type": "data",
+                            "absolute": true,
+                            "elements": [
+                                {
+                                    "type": "field",
+                                    "identifier": "param1"
+                                }
+                            ]
+                        },
+                        "label": "Using a remote enum",
+                        "format": "enum",
+                        "params": {
+                            "enumId": "remote"
                         }
                     }
                 ]

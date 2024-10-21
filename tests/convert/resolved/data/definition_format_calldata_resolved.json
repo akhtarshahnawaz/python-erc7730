@@ -1,5 +1,4 @@
 {
-    "$schema": "../../../registries/clear-signing-erc7730-registry/specs/erc7730-v1.schema.json",
     "context": {
         "eip712": {
             "deployments": [
@@ -41,18 +40,38 @@
             ]
         }
     },
-    "metadata": {},
+    "metadata": {
+        "enums": {}
+    },
     "display": {
         "formats": {
             "TestPrimaryType": {
                 "fields": [
                     {
-                        "path": "param2",
+                        "path": {
+                            "type": "data",
+                            "absolute": true,
+                            "elements": [
+                                {
+                                    "type": "field",
+                                    "identifier": "param2"
+                                }
+                            ]
+                        },
                         "label": "Param 2",
                         "format": "calldata",
                         "params": {
                             "selector": "0x00000000",
-                            "calleePath": "#.param1"
+                            "calleePath": {
+                                "type": "data",
+                                "absolute": true,
+                                "elements": [
+                                    {
+                                        "type": "field",
+                                        "identifier": "param1"
+                                    }
+                                ]
+                            }
                         }
                     }
                 ]
