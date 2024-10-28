@@ -15,7 +15,7 @@
   "metadata": { "enums": {} },
   "display": {
     "formats": {
-      "function1(bytes4)": {
+      "0x5ca8f297": {
         "fields": [
           {
             "path": { "type": "data", "absolute": true, "elements": [{ "type": "field", "identifier": "param1" }] },
