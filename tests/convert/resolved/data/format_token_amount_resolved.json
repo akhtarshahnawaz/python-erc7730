@@ -23,27 +23,27 @@
       "TestPrimaryType": {
         "fields": [
           {
-            "path": { "type": "data", "absolute": true, "elements": [{ "type": "field", "identifier": "param1" }] },
+            "value": { "type": "path", "path": { "type": "data", "absolute": true, "elements": [{ "type": "field", "identifier": "param1" }] } },
             "label": "With minimal set of parameters specified",
             "format": "tokenAmount"
           },
           {
-            "path": { "type": "data", "absolute": true, "elements": [{ "type": "field", "identifier": "param1" }] },
+            "value": { "type": "path", "path": { "type": "data", "absolute": true, "elements": [{ "type": "field", "identifier": "param1" }] } },
             "label": "With all parameters specified, string nativeCurrencyAddress",
             "format": "tokenAmount",
             "params": {
-              "tokenPath": { "type": "data", "absolute": true, "elements": [{ "type": "field", "identifier": "token1" }] },
+              "token": { "type": "path", "path": { "type": "data", "absolute": true, "elements": [{ "type": "field", "identifier": "token1" }] } },
               "nativeCurrencyAddress": ["0x0000000000000000000000000000000000000001"],
               "threshold": "0xffffffff",
               "message": "Max"
             }
           },
           {
-            "path": { "type": "data", "absolute": true, "elements": [{ "type": "field", "identifier": "param1" }] },
+            "value": { "type": "path", "path": { "type": "data", "absolute": true, "elements": [{ "type": "field", "identifier": "param1" }] } },
             "label": "With all parameters specified, array nativeCurrencyAddress",
             "format": "tokenAmount",
             "params": {
-              "tokenPath": { "type": "data", "absolute": true, "elements": [{ "type": "field", "identifier": "token1" }] },
+              "token": { "type": "path", "path": { "type": "data", "absolute": true, "elements": [{ "type": "field", "identifier": "token1" }] } },
               "nativeCurrencyAddress": ["0x0000000000000000000000000000000000000001", "0x0000000000000000000000000000000000000002"],
               "threshold": "0xffffffff",
               "message": "Max"

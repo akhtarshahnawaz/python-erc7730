@@ -28,6 +28,9 @@ from erc7730.model.resolved.display import (
     ResolvedNftNameParameters,
     ResolvedTokenAmountParameters,
     ResolvedUnitParameters,
+    ResolvedValue,
+    ResolvedValueConstant,
+    ResolvedValuePath,
 )
 from erc7730.model.resolved.path import ResolvedPath
 
@@ -137,8 +140,19 @@ def compute_format_schema_paths(format: ResolvedFormat) -> FormatPaths:
                 case _:
                     assert_never(path)
 
+        def add_value(value: ResolvedValue | None) -> None:
+            match value:
+                case None:
+                    pass
+                case ResolvedValueConstant():
+                    pass
+                case ResolvedValuePath(path=path):
+                    add_path(path)
+                case _:
+                    assert_never(value)
+
         def append_paths(field: ResolvedField) -> None:
-            add_path(field.path)
+            add_value(field.value)
             match field:
                 case ResolvedFieldDescription():
                     match field.params:
@@ -146,12 +160,12 @@ def compute_format_schema_paths(format: ResolvedFormat) -> FormatPaths:
                             pass
                         case ResolvedAddressNameParameters():
                             pass
-                        case ResolvedCallDataParameters(calleePath=callee_path):
-                            add_path(callee_path)
-                        case ResolvedTokenAmountParameters(tokenPath=token_path):
-                            add_path(token_path)
-                        case ResolvedNftNameParameters(collectionPath=collection_path):
-                            add_path(collection_path)
+                        case ResolvedCallDataParameters(callee=callee):
+                            add_value(callee)
+                        case ResolvedTokenAmountParameters(token=token):
+                            add_value(token)
+                        case ResolvedNftNameParameters(collection=collection):
+                            add_value(collection)
                         case ResolvedDateParameters():
                             pass
                         case ResolvedUnitParameters():
