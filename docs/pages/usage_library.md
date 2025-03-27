@@ -114,4 +114,5 @@ The package contains several converter implementations:
  erc7730.convert.convert_erc7730_input_to_resolved.ERC7730InputToResolved
  erc7730.convert.convert_eip712_to_erc7730.EIP712toERC7730Converter
  erc7730.convert.convert_erc7730_to_eip712.ERC7730toEIP712Converter
+ erc7730.convert.calldata.convert_erc7730_input_to_calldata.erc7730_descriptor_to_calldata_descriptors
 ```
