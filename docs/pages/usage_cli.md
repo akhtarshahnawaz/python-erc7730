@@ -151,7 +151,7 @@ formatted 294 descriptor files, no errors occurred ✅
 The `calldata` command generates Ledger calldata descriptors, also known as Generic Parser from a valid input ERC-7730 descriptor:
 
 ```shell
-$ erc7730 registry/uniswap/calldata-UniswapV3Router02.json --chain-id=1
+$ erc7730 calldata registry/uniswap/calldata-UniswapV3Router02.json --chain-id=1
 
 [...]
 ```
