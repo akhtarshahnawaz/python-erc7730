@@ -18,6 +18,7 @@ from erc7730.model.base import Model
 from erc7730.model.types import Address
 
 ETHERSCAN = "api.etherscan.io"
+SOURCIFY = "sourcify.dev"
 
 _T = TypeVar("_T")
 
@@ -29,6 +30,16 @@ class EtherscanChain(Model):
     chainname: str
     chainid: int
     blockexplorer: HttpUrl
+
+
+class SourcifyContractData(Model):
+    """Sourcify contract data response."""
+
+    model_config = ConfigDict(strict=False, frozen=True, extra="ignore")
+    abi: list[ABI] | None = None
+    metadata: dict[str, Any] | None = None
+    userdoc: dict[str, Any] | None = None
+    devdoc: dict[str, Any] | None = None
 
 
 @cache
@@ -43,27 +54,46 @@ def get_supported_chains() -> list[EtherscanChain]:
 
 def get_contract_abis(chain_id: int, contract_address: Address) -> list[ABI]:
     """
-    Get contract ABIs from Etherscan.
+    Get contract ABIs from Sourcify.
 
     :param chain_id: EIP-155 chain ID
     :param contract_address: EVM contract address
     :return: deserialized list of ABIs
-    :raises NotImplementedError: if chain id not supported, API key not setup, or unexpected response
+    :raises Exception: if contract not found or not verified on Sourcify
+    """
+    try:
+        contract_data = get(
+            url=HttpUrl(f"https://{SOURCIFY}/server/v2/contract/{chain_id}/{contract_address}"),
+            fields="abi,metadata,userdoc,devdoc",
+            model=SourcifyContractData,
+        )
+        if contract_data.abi is None:
+            raise Exception("ABI not available for this contract on Sourcify")
+        return contract_data.abi
+    except Exception as e:
+        if "404" in str(e) or "not found" in str(e).lower():
+            raise Exception(f"contract not found on Sourcify for chain {chain_id}") from e
+        raise e
+
+
+def get_contract_data(chain_id: int, contract_address: Address) -> SourcifyContractData:
+    """
+    Get full contract data from Sourcify including ABI, metadata, userdoc, and devdoc.
+
+    :param chain_id: EIP-155 chain ID
+    :param contract_address: EVM contract address
+    :return: SourcifyContractData containing all available contract information
+    :raises Exception: if contract not found or not verified on Sourcify
     """
     try:
         return get(
-            url=HttpUrl(f"https://{ETHERSCAN}/v2/api"),
-            chainid=chain_id,
-            module="contract",
-            action="getabi",
-            address=contract_address,
-            model=list[ABI],
+            url=HttpUrl(f"https://{SOURCIFY}/server/v2/contract/{chain_id}/{contract_address}"),
+            fields="abi,metadata,userdoc,devdoc",
+            model=SourcifyContractData,
         )
     except Exception as e:
-        if "Contract source code not verified" in str(e):
-            raise Exception("contract source is not available on Etherscan") from e
-        if "Max calls per sec rate limit reached" in str(e):
-            raise Exception("Etherscan rate limit exceeded, please retry") from e
+        if "404" in str(e) or "not found" in str(e).lower():
+            raise Exception(f"contract not found on Sourcify for chain {chain_id}") from e
         raise e
 
 
