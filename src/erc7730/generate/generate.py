@@ -6,7 +6,7 @@ from pydantic import TypeAdapter
 from pydantic_string_url import HttpUrl
 
 from erc7730.common.abi import ABIDataType, compute_signature, get_functions
-from erc7730.common.client import get_contract_abis
+from erc7730.common.client import get_contract_abis, get_contract_data
 from erc7730.generate.schema_tree import (
     SchemaArray,
     SchemaLeaf,
@@ -51,6 +51,7 @@ def generate_descriptor(
     owner: str | None = None,
     legal_name: str | None = None,
     url: HttpUrl | None = None,
+    auto: bool = False,
 ) -> InputERC7730Descriptor:
     """
     Generate an ERC-7730 descriptor.
@@ -68,9 +69,9 @@ def generate_descriptor(
     :return: a generated ERC-7730 descriptor
     """
 
-    context, trees = _generate_context(chain_id, contract_address, abi, eip712_schema)
+    context, trees, functions = _generate_context(chain_id, contract_address, abi, eip712_schema, auto)
     metadata = _generate_metadata(legal_name, owner, url)
-    display = _generate_display(trees)
+    display = _generate_display(trees, auto, chain_id, contract_address if auto else None, functions)
 
     return InputERC7730Descriptor(context=context, metadata=metadata, display=display)
 
@@ -81,10 +82,11 @@ def _generate_metadata(owner: str | None, legal_name: str | None, url: HttpUrl |
 
 
 def _generate_context(
-    chain_id: int, contract_address: Address, abi: str | bytes | None, eip712_schema: str | bytes | None
-) -> tuple[InputContractContext | InputEIP712Context, dict[str, SchemaTree]]:
+    chain_id: int, contract_address: Address, abi: str | bytes | None, eip712_schema: str | bytes | None, auto: bool
+) -> tuple[InputContractContext | InputEIP712Context, dict[str, SchemaTree], list | None]:
     if eip712_schema is not None:
-        return _generate_context_eip712(chain_id, contract_address, eip712_schema)
+        context, trees = _generate_context_eip712(chain_id, contract_address, eip712_schema)
+        return context, trees, None
     return _generate_context_calldata(chain_id, contract_address, abi)
 
 
@@ -104,7 +106,7 @@ def _generate_context_eip712(
 
 def _generate_context_calldata(
     chain_id: int, contract_address: Address, abi: str | bytes | None
-) -> tuple[InputContractContext, dict[str, SchemaTree]]:
+) -> tuple[InputContractContext, dict[str, SchemaTree], list]:
     if abi is not None:
         abis = TypeAdapter(list[ABI]).validate_json(abi)
 
@@ -112,6 +114,9 @@ def _generate_context_calldata(
         raise Exception("Failed to fetch contract ABIs")
 
     functions = list(get_functions(abis).functions.values())
+    
+    # Filter out view/pure functions as they won't be signed by users
+    functions = [func for func in functions if func.stateMutability not in ["view", "pure"]]
 
     context = InputContractContext(
         contract=InputContract(abi=functions, deployments=[InputDeployment(chainId=chain_id, address=contract_address)])
@@ -119,33 +124,52 @@ def _generate_context_calldata(
 
     trees = {compute_signature(function): abi_function_to_tree(function) for function in functions}
 
-    return context, trees
+    return context, trees, functions
 
 
-def _generate_display(trees: dict[str, SchemaTree]) -> InputDisplay:
-    return InputDisplay(formats=_generate_formats(trees))
+def _generate_display(trees: dict[str, SchemaTree], auto: bool = False, chain_id: int | None = None, contract_address: Address | None = None, functions: list | None = None) -> InputDisplay:
+    return InputDisplay(formats=_generate_formats(trees, auto, chain_id, contract_address, functions))
 
 
-def _generate_formats(trees: dict[str, SchemaTree]) -> dict[str, InputFormat]:
+def _generate_formats(trees: dict[str, SchemaTree], auto: bool = False, chain_id: int | None = None, contract_address: Address | None = None, functions: list | None = None) -> dict[str, InputFormat]:
     formats: dict[str, InputFormat] = {}
+    
+    # Initialize LLM inference if auto mode is enabled
+    llm_inference = None
+    contract_data = None
+    function_map = {}
+    
+    if auto and chain_id is not None and contract_address is not None:
+        try:
+            from erc7730.generate.llm_inference import LLMInference
+            llm_inference = LLMInference()
+            contract_data = get_contract_data(chain_id, contract_address)
+            
+            # Create a mapping from function signature to function for LLM inference
+            if functions:
+                function_map = {compute_signature(func): func for func in functions}
+        except Exception as e:
+            print(f"Warning: Failed to initialize LLM inference: {e}")
+    
     for name, tree in trees.items():
-        if fields := list(_generate_fields(schema=tree, path=ROOT_DATA_PATH)):
+        current_function = function_map.get(name) if function_map else None
+        if fields := list(_generate_fields(schema=tree, path=ROOT_DATA_PATH, auto=auto, llm_inference=llm_inference, contract_data=contract_data, function_data=current_function)):
             formats[name] = InputFormat(fields=fields)
     return formats
 
 
-def _generate_fields(schema: SchemaTree, path: DataPath) -> Generator[InputField, Any, Any]:
+def _generate_fields(schema: SchemaTree, path: DataPath, auto: bool = False, llm_inference=None, contract_data=None, function_data=None) -> Generator[InputField, Any, Any]:
     match schema:
         case SchemaStruct(components=components) if path == ROOT_DATA_PATH:
             for name, component in components.items():
                 if name:
-                    yield from _generate_fields(component, data_path_append(path, Field(identifier=name)))
+                    yield from _generate_fields(component, data_path_append(path, Field(identifier=name)), auto, llm_inference, contract_data, function_data)
 
         case SchemaStruct(components=components):
             fields = [
                 field
                 for name, component in components.items()
-                for field in _generate_fields(component, DataPath(absolute=False, elements=[Field(identifier=name)]))
+                for field in _generate_fields(component, DataPath(absolute=False, elements=[Field(identifier=name)]), auto, llm_inference, contract_data, function_data)
                 if name
             ]
             yield InputNestedFields(path=path, fields=fields)
@@ -155,23 +179,33 @@ def _generate_fields(schema: SchemaTree, path: DataPath) -> Generator[InputField
                 case SchemaStruct() | SchemaArray():
                     yield InputNestedFields(
                         path=data_path_append(path, Array()),
-                        fields=list(_generate_fields(component, DataPath(absolute=False, elements=[]))),
+                        fields=list(_generate_fields(component, DataPath(absolute=False, elements=[]), auto, llm_inference, contract_data, function_data)),
                     )
                 case SchemaLeaf():
-                    yield from _generate_fields(component, data_path_append(path, Array()))
+                    yield from _generate_fields(component, data_path_append(path, Array()), auto, llm_inference, contract_data, function_data)
                 case _:
                     assert_never(schema)
 
         case SchemaLeaf(data_type=data_type):
             name = _get_leaf_name(path)
-            format, params = _generate_field(name, data_type)
+            format, params = _generate_field(name, data_type, auto, llm_inference, contract_data, function_data)
             yield InputFieldDescription(path=path, label=name, format=format, params=params)
 
         case _:
             assert_never(schema)
 
 
-def _generate_field(name: str, data_type: ABIDataType) -> tuple[FieldFormat, InputFieldParameters | None]:
+def _generate_field(name: str, data_type: ABIDataType, auto: bool = False, llm_inference=None, contract_data=None, function_data=None) -> tuple[FieldFormat, InputFieldParameters | None]:
+    # Try LLM inference first if available and auto mode is enabled
+    if auto and llm_inference and function_data:
+        try:
+            llm_formats = llm_inference.infer_field_formats(function_data, contract_data)
+            if name in llm_formats:
+                return llm_formats[name]
+        except Exception as e:
+            print(f"Warning: LLM inference failed for field {name}: {e}")
+    
+    # Fallback to heuristic-based inference
     match data_type:
         case ABIDataType.UINT | ABIDataType.INT:
             # other applicable formats could be TOKEN_AMOUNT, UNIT or ENUM, but we can't tell

@@ -157,6 +157,7 @@ def command_generate(
     owner: Annotated[str | None, Option(help="The display name of the owner or target of the contract")] = None,
     legal_name: Annotated[str | None, Option(help="The full legal name of the owner")] = None,
     url: Annotated[str | None, Option(help="URL with more info on the entity interacted with")] = None,
+    auto: Annotated[bool, Option(help="Enable LLM-based automatic inference for generating display formats")] = False,
 ) -> None:
     if schema is not None and abi is not None:
         print("Cannot specify both ABI and schema.")
@@ -179,6 +180,7 @@ def command_generate(
         owner=owner,
         legal_name=legal_name,
         url=HttpUrl(url) if url is not None else None,
+        auto=auto,
     )
     print(descriptor.to_json_string())
 
