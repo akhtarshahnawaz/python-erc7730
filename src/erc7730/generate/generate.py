@@ -6,7 +6,7 @@ from pydantic import TypeAdapter
 from pydantic_string_url import HttpUrl
 
 from erc7730.common.abi import ABIDataType, compute_signature, get_functions
-from erc7730.common.client import get_contract_abis, get_contract_data
+from erc7730.common.client import get_contract_abis, get_contract_data, SourcifyContractData
 from erc7730.generate.schema_tree import (
     SchemaArray,
     SchemaLeaf,
@@ -70,15 +70,44 @@ def generate_descriptor(
     """
 
     context, trees, functions = _generate_context(chain_id, contract_address, abi, eip712_schema, auto)
-    metadata = _generate_metadata(legal_name, owner, url)
+    
+    # Get contract data for metadata inference if in auto mode
+    contract_data = None
+    if auto and chain_id is not None and contract_address is not None:
+        try:
+            contract_data = get_contract_data(chain_id, contract_address)
+        except Exception as e:
+            print(f"Warning: Failed to fetch contract data for metadata inference: {e}")
+    
+    metadata = _generate_metadata(legal_name, owner, url, contract_data)
     display = _generate_display(trees, auto, chain_id, contract_address if auto else None, functions)
 
     return InputERC7730Descriptor(context=context, metadata=metadata, display=display)
 
 
-def _generate_metadata(owner: str | None, legal_name: str | None, url: HttpUrl | None) -> InputMetadata:
-    info = OwnerInfo(legalName=legal_name, url=url) if legal_name is not None and url is not None else None
-    return InputMetadata(owner=owner, info=info)
+def _generate_metadata(owner: str | None, legal_name: str | None, url: HttpUrl | None, contract_data: SourcifyContractData | None = None) -> InputMetadata:
+    # Use provided values if available, otherwise try to infer from contract data
+    inferred_owner = owner
+    inferred_legal_name = legal_name
+    inferred_url = url
+    
+    # If no explicit values provided and contract data is available, try to infer
+    if contract_data is not None:
+        if inferred_owner is None:
+            inferred_owner = _infer_owner_from_contract_data(contract_data)
+        
+        if inferred_legal_name is None:
+            inferred_legal_name = _infer_legal_name_from_contract_data(contract_data)
+        
+        if inferred_url is None:
+            inferred_url = _infer_url_from_contract_data(contract_data)
+    
+    # Create info object if we have either legal name or URL
+    info = None
+    if inferred_legal_name is not None or inferred_url is not None:
+        info = OwnerInfo(legalName=inferred_legal_name, url=inferred_url)
+    
+    return InputMetadata(owner=inferred_owner, info=info)
 
 
 def _generate_context(
@@ -306,3 +335,74 @@ def _get_param_name(path: DataPath) -> str:
 def _contains_any_of(name: str, *values: str) -> bool:
     name_lower = name.lower()
     return any(value in name_lower for value in values)
+
+
+def _infer_owner_from_contract_data(contract_data: SourcifyContractData) -> str | None:
+    """Infer the owner/project name from contract data."""
+    if contract_data.metadata is None:
+        return None
+    
+    # Try to get contract name from compilation target
+    compilation_target = contract_data.metadata.get("settings", {}).get("compilationTarget", {})
+    if compilation_target:
+        return next(iter(compilation_target.values()), None)
+    
+    # Try to extract from devdoc title
+    devdoc = contract_data.devdoc
+    if devdoc and "title" in devdoc:
+        title = devdoc["title"]
+        # Extract the main entity name from title
+        # E.g., "Uniswap V3 Pool" -> "Uniswap"
+        words = title.split()
+        if words:
+            return words[0]
+    
+    # Try to extract from devdoc author
+    if devdoc and "author" in devdoc:
+        author = devdoc["author"]
+        # Extract the first part of author info
+        if " - " in author:
+            return author.split(" - ")[0].strip()
+        elif ":" in author:
+            return author.split(":")[0].strip()
+    
+    return None
+
+
+def _infer_legal_name_from_contract_data(contract_data: SourcifyContractData) -> str | None:
+    """Infer the legal name from contract data."""
+    if contract_data.metadata is None:
+        return None
+
+    # Try to extract from devdoc title if it looks like a full legal name
+    devdoc = contract_data.devdoc
+    if devdoc and "title" in devdoc:
+        title = devdoc["title"]
+        # If title contains "Protocol", "DAO", "Limited", etc., it might be a legal name
+        legal_indicators = ["Protocol", "DAO", "Limited", "Inc", "Corp", "Foundation"]
+        if any(indicator in title for indicator in legal_indicators):
+            return title
+    
+    return None
+
+
+def _infer_url_from_contract_data(contract_data: SourcifyContractData) -> HttpUrl | None:
+    """Infer the URL from contract data."""
+    if contract_data.metadata is None:
+        return None
+    
+    # Look for URLs in devdoc details or other fields
+    devdoc = contract_data.devdoc
+    if devdoc and "details" in devdoc:
+        details = devdoc["details"]
+        # Basic URL extraction - look for common patterns
+        import re
+        url_pattern = r'https?://[^\s<>"{\[\]|\\^`]+'
+        urls = re.findall(url_pattern, details)
+        if urls:
+            try:
+                return HttpUrl(urls[0])
+            except Exception:
+                pass
+    
+    return None
