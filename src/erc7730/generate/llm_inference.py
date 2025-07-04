@@ -6,8 +6,8 @@ from openai import OpenAI
 
 from erc7730.model.abi import Function
 from erc7730.common.client import SourcifyContractData
-from erc7730.model.display import FieldFormat, AddressNameType
-from erc7730.model.input.display import InputFieldParameters, InputAddressNameParameters, InputTokenAmountParameters
+from erc7730.model.display import FieldFormat, AddressNameType, DateEncoding
+from erc7730.model.input.display import InputFieldParameters, InputAddressNameParameters, InputTokenAmountParameters, InputDateParameters
 
 
 class FieldSuggestion(NamedTuple):
@@ -473,9 +473,29 @@ Focus on making the transaction intent clear to users without assuming specific 
                         # Return None if no supported parameters, will use basic tokenAmount format
                         return None
                 
+                case FieldFormat.DATE:
+                    # Convert encoding string to DateEncoding enum
+                    encoding = params.get("encoding")
+                    if isinstance(encoding, str):
+                        encoding_mapping = {
+                            "timestamp": DateEncoding.TIMESTAMP,
+                            "blockheight": DateEncoding.BLOCKHEIGHT,
+                            "TIMESTAMP": DateEncoding.TIMESTAMP,
+                            "BLOCKHEIGHT": DateEncoding.BLOCKHEIGHT,
+                        }
+                        enum_encoding = encoding_mapping.get(encoding)
+                        if enum_encoding:
+                            return InputDateParameters(encoding=enum_encoding)
+                        else:
+                            print(f"Warning: Unknown date encoding '{encoding}', using timestamp")
+                            return InputDateParameters(encoding=DateEncoding.TIMESTAMP)
+                    else:
+                        # If encoding is not a string or missing, default to timestamp
+                        return InputDateParameters(encoding=DateEncoding.TIMESTAMP)
+                
                 case _:
-                    # For other formats, return the params as-is for now
-                    return params
+                    # For other formats, return None
+                    return None
                     
         except Exception as e:
             print(f"Warning: Failed to convert parameters for {field_format}: {e}")
