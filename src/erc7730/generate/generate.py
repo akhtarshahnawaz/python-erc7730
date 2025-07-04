@@ -154,7 +154,12 @@ def _generate_formats(trees: dict[str, SchemaTree], auto: bool = False, chain_id
     for name, tree in trees.items():
         current_function = function_map.get(name) if function_map else None
         if fields := list(_generate_fields(schema=tree, path=ROOT_DATA_PATH, auto=auto, llm_inference=llm_inference, contract_data=contract_data, function_data=current_function)):
-            formats[name] = InputFormat(fields=fields)
+            # Check if LLM suggested an intent message
+            intent = None
+            if auto and llm_inference and current_function:
+                intent = llm_inference.get_function_intent(current_function)
+            
+            formats[name] = InputFormat(fields=fields, intent=intent)
     return formats
 
 
@@ -188,19 +193,32 @@ def _generate_fields(schema: SchemaTree, path: DataPath, auto: bool = False, llm
 
         case SchemaLeaf(data_type=data_type):
             name = _get_leaf_name(path)
-            format, params = _generate_field(name, data_type, auto, llm_inference, contract_data, function_data)
-            yield InputFieldDescription(path=path, label=name, format=format, params=params)
+            # Extract original parameter name from path for LLM lookup
+            param_name = _get_param_name(path)
+            format, params = _generate_field(name, param_name, data_type, auto, llm_inference, contract_data, function_data)
+            
+            # Check if LLM suggested a better label
+            label = name
+            if auto and llm_inference and function_data:
+                suggested_label = llm_inference.get_field_label(function_data, param_name)
+                if suggested_label:
+                    label = suggested_label
+            
+            yield InputFieldDescription(path=path, label=label, format=format, params=params)
 
         case _:
             assert_never(schema)
 
 
-def _generate_field(name: str, data_type: ABIDataType, auto: bool = False, llm_inference=None, contract_data=None, function_data=None) -> tuple[FieldFormat, InputFieldParameters | None]:
+def _generate_field(name: str, param_name: str, data_type: ABIDataType, auto: bool = False, llm_inference=None, contract_data=None, function_data=None) -> tuple[FieldFormat, InputFieldParameters | None]:
     # Try LLM inference first if available and auto mode is enabled
     if auto and llm_inference and function_data:
         try:
             llm_formats = llm_inference.infer_field_formats(function_data, contract_data)
-            if name in llm_formats:
+            # Check both parameter name and display name
+            if param_name in llm_formats:
+                return llm_formats[param_name]
+            elif name in llm_formats:
                 return llm_formats[name]
         except Exception as e:
             print(f"Warning: LLM inference failed for field {name}: {e}")
@@ -265,6 +283,19 @@ def _get_leaf_name(path: DataPath) -> str:
         match element:
             case Field(identifier=name):
                 return to_title(name).strip()
+            case Array() | ArrayElement() | ArraySlice():
+                continue
+            case _:
+                assert_never(element)
+    return "unknown"
+
+
+def _get_param_name(path: DataPath) -> str:
+    """Extract the original parameter name from the path (without title case conversion)."""
+    for element in reversed(path.elements):
+        match element:
+            case Field(identifier=name):
+                return name or "unknown"
             case Array() | ArrayElement() | ArraySlice():
                 continue
             case _:
