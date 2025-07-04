@@ -210,7 +210,7 @@ Example semantic analysis:
 - "newOwner" (address) → ADDRESS_NAME for account transfers, label: "New Contract Owner"
 - "mintPriceETH" (uint256) → TOKEN_AMOUNT for token pricing, label: "Price in ETH"  
 - "deadline" (uint256) → DATE for time-based parameters, label: "Deadline"
-- "tokenIds" (uint256[]) → Could be NFT_NAME if NFT context, otherwise RAW
+- "tokenIds" (uint256[]) → RAW for NFT token IDs
 - "message" (string) → RAW for arbitrary text
 - "recipient" (address) → ADDRESS_NAME for transfers, label: "Recipient"
 
@@ -223,14 +223,6 @@ Example responses:
             "params": {"types": ["eoa", "wallet", "contract"]},
             "label": "New Contract Owner"
         }
-    }
-}
-
-{
-    "intent": "Mint NFT",
-    "fields": {
-        "tokenIds": {"format": "NFT_NAME", "params": null},
-        "message": {"format": "RAW", "params": null}
     }
 }
 
@@ -300,10 +292,11 @@ ERC-7730 Format Guidelines:
    - Example: {"format": "TOKEN_AMOUNT", "params": null}
 
 5. **NFT_NAME** - Displays NFT names from collections
-   - Use for: NFT token IDs when in NFT contract context
-   - ONLY use when you can infer this is an NFT-related contract
-   - Example: {"format": "NFT_NAME", "params": null}
+   - Use for: NFT contract addresses when in NFT contract context
+   - Example: {"format": "NFT_NAME", "params": {"collectionPath": "nftCollectionParamName"}}
    - NEVER hardcode collection addresses
+   - DO NOT use this for nft token IDs
+   - ONLY use when you can infer this is an NFT-related contract address
 
 6. **DATE** - Displays timestamps and block heights as dates
    - Use for: deadlines, expiration times, timestamps
