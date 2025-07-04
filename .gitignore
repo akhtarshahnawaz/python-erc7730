@@ -16,3 +16,4 @@ tmp/
 *.egg-info
 docs/build
 tests/**/*.xml
+.env

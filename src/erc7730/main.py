@@ -4,6 +4,8 @@ import os
 from pathlib import Path
 from typing import Annotated, assert_never
 
+import dotenv
+
 from eip712.convert.input_to_resolved import EIP712InputToResolvedConverter
 from eip712.model.input.descriptor import InputEIP712DAppDescriptor
 from pydantic import RootModel
@@ -28,7 +30,9 @@ from erc7730.model.input.descriptor import InputERC7730Descriptor
 from erc7730.model.resolved.descriptor import ResolvedERC7730Descriptor
 from erc7730.model.types import Address
 
-if os.environ.get("DEBUG") is not None:
+dotenv.load_dotenv()
+
+if os.environ.get("DEBUG", "0") == "1":
     logging.basicConfig(
         format="%(levelname)s [%(asctime)s] %(name)s - %(message)s", datefmt="%Y-%m-%d %H:%M:%S", level=logging.DEBUG
     )
