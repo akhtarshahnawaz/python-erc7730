@@ -6,8 +6,8 @@ from openai import OpenAI
 
 from erc7730.model.abi import Function
 from erc7730.common.client import SourcifyContractData
-from erc7730.model.display import FieldFormat
-from erc7730.model.input.display import InputFieldParameters
+from erc7730.model.display import FieldFormat, AddressNameType
+from erc7730.model.input.display import InputFieldParameters, InputAddressNameParameters, InputTokenAmountParameters
 
 
 class LLMInference:
@@ -63,9 +63,17 @@ class LLMInference:
                 temperature=0,
             )
             
+            # Check if we got a valid response
+            if not response.choices:
+                print(f"Warning: No choices in LLM response for function {function.name or 'unknown'}")
+                return {}
+            
             result = response.choices[0].message.content
-            if result:
-                return self._parse_llm_response(result)
+            if not result:
+                print(f"Warning: Empty content in LLM response for function {function.name or 'unknown'}")
+                return {}
+            
+            return self._parse_llm_response(result)
             
         except Exception as e:
             print(f"Warning: LLM inference failed for function {function.name or 'unknown'}: {e}")
@@ -161,25 +169,67 @@ Always return valid JSON with the exact format requested."""
     def _parse_llm_response(self, response: str) -> dict[str, tuple[FieldFormat, InputFieldParameters | None]]:
         """Parse LLM response and convert to expected format."""
         try:
-            parsed = json.loads(response.strip())
+            # Clean up the response - sometimes LLMs add markdown formatting
+            cleaned_response = response.strip()
+            
+            # Remove markdown code blocks if present
+            if cleaned_response.startswith("```json"):
+                cleaned_response = cleaned_response[7:]
+            if cleaned_response.startswith("```"):
+                cleaned_response = cleaned_response[3:]
+            if cleaned_response.endswith("```"):
+                cleaned_response = cleaned_response[:-3]
+            
+            cleaned_response = cleaned_response.strip()
+            
+            # Check if response is empty
+            if not cleaned_response:
+                print("Warning: LLM returned empty response")
+                return {}
+            
+            # Debug: print the response we're trying to parse (only when DEBUG env var is set)
+            if os.environ.get("DEBUG") == "1":
+                print(f"Debug: Attempting to parse LLM response: {cleaned_response[:200]}...")
+            
+            parsed = json.loads(cleaned_response)
             result = {}
             
             for param_name, format_info in parsed.items():
                 format_name = format_info.get("format", "RAW")
                 params = format_info.get("params")
                 
-                # Convert format string to enum
-                try:
-                    field_format = FieldFormat(format_name)
-                except ValueError:
-                    field_format = FieldFormat.RAW
+                # Convert format string to enum - handle both camelCase and UPPER_CASE
+                format_mapping = {
+                    "RAW": FieldFormat.RAW,
+                    "ADDRESS_NAME": FieldFormat.ADDRESS_NAME,
+                    "CALL_DATA": FieldFormat.CALL_DATA,
+                    "AMOUNT": FieldFormat.AMOUNT,
+                    "TOKEN_AMOUNT": FieldFormat.TOKEN_AMOUNT,
+                    "NFT_NAME": FieldFormat.NFT_NAME,
+                    "DATE": FieldFormat.DATE,
+                    "DURATION": FieldFormat.DURATION,
+                    "UNIT": FieldFormat.UNIT,
+                    "ENUM": FieldFormat.RAW,  # ENUM not in current FieldFormat, use RAW
+                    # Also support camelCase versions
+                    "raw": FieldFormat.RAW,
+                    "addressName": FieldFormat.ADDRESS_NAME,
+                    "calldata": FieldFormat.CALL_DATA,
+                    "amount": FieldFormat.AMOUNT,
+                    "tokenAmount": FieldFormat.TOKEN_AMOUNT,
+                    "nftName": FieldFormat.NFT_NAME,
+                    "date": FieldFormat.DATE,
+                    "duration": FieldFormat.DURATION,
+                    "unit": FieldFormat.UNIT,
+                }
                 
-                # Convert params to appropriate type
+                field_format = format_mapping.get(format_name, FieldFormat.RAW)
+                if format_name not in format_mapping:
+                    print(f"Warning: Unknown format '{format_name}', using RAW")
+                
+                # Convert params to appropriate type based on format
                 field_params = None
-                if params:
-                    # This would need more sophisticated parameter parsing
-                    # based on the specific format type
-                    field_params = params
+                if params and field_format != FieldFormat.RAW:
+                    field_params = self._convert_params(field_format, params)
                 
                 result[param_name] = (field_format, field_params)
             
@@ -187,4 +237,71 @@ Always return valid JSON with the exact format requested."""
             
         except (json.JSONDecodeError, KeyError) as e:
             print(f"Warning: Failed to parse LLM response: {e}")
+            print(f"Raw response was: {repr(response)}")
             return {}
+
+    def _convert_params(self, field_format: FieldFormat, params: dict[str, Any]) -> InputFieldParameters | None:
+        """Convert LLM-provided parameters to proper InputFieldParameters type."""
+        try:
+            match field_format:
+                case FieldFormat.ADDRESS_NAME:
+                    # Convert address types
+                    types = params.get("types", [])
+                    if isinstance(types, str):
+                        types = [types]
+                    
+                    # Map LLM type names to AddressNameType enum values
+                    type_mapping = {
+                        "ACCOUNT": AddressNameType.EOA,
+                        "EOA": AddressNameType.EOA,
+                        "WALLET": AddressNameType.WALLET,
+                        "CONTRACT": AddressNameType.CONTRACT,
+                        "TOKEN": AddressNameType.TOKEN,
+                        "COLLECTION": AddressNameType.COLLECTION,
+                        # lowercase versions
+                        "account": AddressNameType.EOA,
+                        "eoa": AddressNameType.EOA,
+                        "wallet": AddressNameType.WALLET,
+                        "contract": AddressNameType.CONTRACT,
+                        "token": AddressNameType.TOKEN,
+                        "collection": AddressNameType.COLLECTION,
+                    }
+                    
+                    converted_types = []
+                    for type_name in types:
+                        if type_name in type_mapping:
+                            converted_types.append(type_mapping[type_name])
+                        else:
+                            print(f"Warning: Unknown address type '{type_name}', skipping")
+                    
+                    if converted_types:
+                        return InputAddressNameParameters(types=converted_types)
+                
+                case FieldFormat.TOKEN_AMOUNT:
+                    # For token amount, filter out unsupported parameters like 'decimals'
+                    # InputTokenAmountParameters only accepts: tokenPath, token, nativeCurrencyAddress, threshold, message
+                    supported_params = {}
+                    for key, value in params.items():
+                        if key in ["tokenPath", "token", "nativeCurrencyAddress", "threshold", "message"]:
+                            supported_params[key] = value
+                        elif key == "decimals":
+                            # Skip decimals as it's derived from token metadata
+                            continue
+                        else:
+                            print(f"Warning: Unsupported TOKEN_AMOUNT parameter '{key}', skipping")
+                    
+                    if supported_params:
+                        return InputTokenAmountParameters(**supported_params)
+                    else:
+                        # Return None if no supported parameters, will use basic tokenAmount format
+                        return None
+                
+                case _:
+                    # For other formats, return the params as-is for now
+                    return params
+                    
+        except Exception as e:
+            print(f"Warning: Failed to convert parameters for {field_format}: {e}")
+            return None
+        
+        return None
