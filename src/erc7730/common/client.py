@@ -32,6 +32,23 @@ class EtherscanChain(Model):
     blockexplorer: HttpUrl
 
 
+class ProxyImplementation(Model):
+    """Proxy implementation info."""
+    
+    model_config = ConfigDict(strict=False, frozen=True, extra="ignore")
+    address: Address
+    name: str | None = None
+
+
+class ProxyResolution(Model):
+    """Proxy resolution information."""
+    
+    model_config = ConfigDict(strict=False, frozen=True, extra="ignore")
+    isProxy: bool
+    proxyType: str | None = None
+    implementations: list[ProxyImplementation] | None = None
+
+
 class SourcifyContractData(Model):
     """Sourcify contract data response."""
 
@@ -40,6 +57,7 @@ class SourcifyContractData(Model):
     metadata: dict[str, Any] | None = None
     userdoc: dict[str, Any] | None = None
     devdoc: dict[str, Any] | None = None
+    proxyResolution: ProxyResolution | None = None
 
 
 @cache
@@ -54,22 +72,57 @@ def get_supported_chains() -> list[EtherscanChain]:
 
 def get_contract_abis(chain_id: int, contract_address: Address) -> list[ABI]:
     """
-    Get contract ABIs from Sourcify.
+    Get contract ABIs from Sourcify, merging proxy and implementation ABIs when applicable.
 
     :param chain_id: EIP-155 chain ID
     :param contract_address: EVM contract address
-    :return: deserialized list of ABIs
+    :return: deserialized list of ABIs (merged if proxy)
     :raises Exception: if contract not found or not verified on Sourcify
     """
     try:
         contract_data = get(
             url=HttpUrl(f"https://{SOURCIFY}/server/v2/contract/{chain_id}/{contract_address}"),
-            fields="abi,metadata,userdoc,devdoc",
+            fields="abi,metadata,userdoc,devdoc,proxyResolution",
             model=SourcifyContractData,
         )
-        if contract_data.abi is None:
+        
+        proxy_abi = contract_data.abi or []
+        
+        # If this is a proxy and we have implementation info, merge ABIs
+        if (contract_data.proxyResolution and 
+            contract_data.proxyResolution.isProxy and 
+            contract_data.proxyResolution.implementations):
+            
+            # Try to get ABI from the first implementation
+            impl_address = contract_data.proxyResolution.implementations[0].address
+            try:
+                impl_contract_data = get(
+                    url=HttpUrl(f"https://{SOURCIFY}/server/v2/contract/{chain_id}/{impl_address}"),
+                    fields="abi,metadata,userdoc,devdoc",
+                    model=SourcifyContractData,
+                )
+                if impl_contract_data.abi is not None:
+                    # Merge proxy ABI and implementation ABI
+                    # Implementation ABI first, then proxy-specific functions
+                    merged_abi = list(impl_contract_data.abi)
+                    
+                    # Add proxy-specific functions that aren't in implementation
+                    impl_function_names = {abi.name for abi in impl_contract_data.abi if hasattr(abi, 'name') and abi.name}
+                    for proxy_function in proxy_abi:
+                        if (hasattr(proxy_function, 'name') and 
+                            proxy_function.name and 
+                            proxy_function.name not in impl_function_names):
+                            merged_abi.append(proxy_function)
+                    
+                    print(f"Merged proxy and implementation ABIs: {len(proxy_abi)} proxy + {len(impl_contract_data.abi)} implementation = {len(merged_abi)} total functions")
+                    return merged_abi
+            except Exception as impl_e:
+                print(f"Warning: Could not fetch implementation ABI from {impl_address}: {impl_e}")
+        
+        # Fallback to proxy ABI if available
+        if not proxy_abi:
             raise Exception("ABI not available for this contract on Sourcify")
-        return contract_data.abi
+        return proxy_abi
     except Exception as e:
         if "404" in str(e) or "not found" in str(e).lower():
             raise Exception(f"contract not found on Sourcify for chain {chain_id}") from e
@@ -78,7 +131,7 @@ def get_contract_abis(chain_id: int, contract_address: Address) -> list[ABI]:
 
 def get_contract_data(chain_id: int, contract_address: Address) -> SourcifyContractData:
     """
-    Get full contract data from Sourcify including ABI, metadata, userdoc, and devdoc.
+    Get full contract data from Sourcify including ABI, metadata, userdoc, devdoc, and proxy resolution.
 
     :param chain_id: EIP-155 chain ID
     :param contract_address: EVM contract address
@@ -86,11 +139,42 @@ def get_contract_data(chain_id: int, contract_address: Address) -> SourcifyContr
     :raises Exception: if contract not found or not verified on Sourcify
     """
     try:
-        return get(
+        contract_data = get(
             url=HttpUrl(f"https://{SOURCIFY}/server/v2/contract/{chain_id}/{contract_address}"),
-            fields="abi,metadata,userdoc,devdoc",
+            fields="abi,metadata,userdoc,devdoc,proxyResolution",
             model=SourcifyContractData,
         )
+        
+        # If this is a proxy and we have implementation info, merge implementation data
+        if (contract_data.proxyResolution and 
+            contract_data.proxyResolution.isProxy and 
+            contract_data.proxyResolution.implementations):
+            
+            # Try to get data from the first implementation
+            impl_address = contract_data.proxyResolution.implementations[0].address
+            try:
+                impl_contract_data = get(
+                    url=HttpUrl(f"https://{SOURCIFY}/server/v2/contract/{chain_id}/{impl_address}"),
+                    fields="abi,metadata,userdoc,devdoc",
+                    model=SourcifyContractData,
+                )
+                
+                # Merge implementation data with proxy data, preferring implementation data
+                merged_data = {
+                    "abi": impl_contract_data.abi or contract_data.abi,
+                    "metadata": impl_contract_data.metadata or contract_data.metadata,
+                    "userdoc": impl_contract_data.userdoc or contract_data.userdoc,
+                    "devdoc": impl_contract_data.devdoc or contract_data.devdoc,
+                    "proxyResolution": contract_data.proxyResolution,
+                }
+                
+                print(f"Merged implementation data from {impl_address} for proxy at {contract_address}")
+                return SourcifyContractData(**merged_data)
+                
+            except Exception as impl_e:
+                print(f"Warning: Could not fetch implementation data from {impl_address}: {impl_e}")
+        
+        return contract_data
     except Exception as e:
         if "404" in str(e) or "not found" in str(e).lower():
             raise Exception(f"contract not found on Sourcify for chain {chain_id}") from e
