@@ -28,6 +28,15 @@ Your goal is to make the transaction intent clearer to users.
 Return ONLY a JSON object with this structure:
 {
     "intent": "Very short action (max 5 words for hardware wallet displays)",
+    "constants": {
+        "constantName": "value"
+    },
+    "enums": {
+        "enumName": {
+            "1": "readable value",
+            "2": "another value"
+        }
+    },
     "fields": {
         "parameterName": {
             "format": "FORMAT_NAME",
@@ -36,6 +45,11 @@ Return ONLY a JSON object with this structure:
         }
     }
 }
+
+NOTES: 
+- Only include "constants" section if you need to define constants referenced in field parameters
+- Only include "enums" section if you need to define enums referenced in field parameters  
+- Basic metadata (owner, info) is handled separately - don't include it
 
 Example semantic analysis:
 - "newOwner" (address) → addressName for account transfers, label: "New Contract Owner"
@@ -81,6 +95,23 @@ Example responses:
             "format": "date",
             "params": {"encoding": "timestamp"},
             "label": "Trading Deadline"
+        }
+    }
+}
+
+{
+    "intent": "Set interest rate mode",
+    "enums": {
+        "rateMode": {
+            "1": "Stable Rate",
+            "2": "Variable Rate"
+        }
+    },
+    "fields": {
+        "interestRateMode": {
+            "format": "enum",
+            "params": {"$ref": "$.enums.rateMode"},
+            "label": "Rate Mode"
         }
     }
 }

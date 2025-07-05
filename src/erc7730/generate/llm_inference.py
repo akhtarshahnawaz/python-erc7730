@@ -74,9 +74,11 @@ class LLMInference:
         
         # Generate prompt for LLM
         prompt = self._generate_prompt(context)
-        print('----------START USER PROMPT----------')
-        print(prompt)
-        print('----------END USER PROMPT----------')
+        # Debug: print the user prompt
+        if os.environ.get("DEBUG") == "1":
+            print('----------START USER PROMPT----------')
+            print(prompt)
+            print('----------END USER PROMPT----------')
         
         try:
             response = self.client.chat.completions.create(
@@ -169,9 +171,11 @@ class LLMInference:
                 # Extract just the specific function being analyzed
                 function_code, constants = extract_function_and_constants(full_source_code, function_data.name or "")
 
-                print('----------START CONSTANTS CODE----------')
-                print(constants)
-                print('----------END CONSTANTS CODE----------')
+                # Debug: print contract constants
+                if os.environ.get("DEBUG") == "1":
+                    print('----------START CONSTANTS CODE----------')
+                    print(constants)
+                    print('----------END CONSTANTS CODE----------')
                 
                 context["source_info"] = {
                     "path": path,
@@ -311,17 +315,7 @@ class LLMInference:
                 
                 # Convert format string to enum - handle both camelCase and UPPER_CASE
                 format_mapping = {
-                    "RAW": FieldFormat.RAW,
-                    "ADDRESS_NAME": FieldFormat.ADDRESS_NAME,
-                    "CALL_DATA": FieldFormat.CALL_DATA,
-                    "AMOUNT": FieldFormat.AMOUNT,
-                    "TOKEN_AMOUNT": FieldFormat.TOKEN_AMOUNT,
-                    "NFT_NAME": FieldFormat.NFT_NAME,
-                    "DATE": FieldFormat.DATE,
-                    "DURATION": FieldFormat.DURATION,
-                    "UNIT": FieldFormat.UNIT,
-                    "ENUM": FieldFormat.RAW,  # ENUM not in current FieldFormat, use RAW
-                    # Also support camelCase versions
+                    # Correct lowercase format names (ERC-7730 standard)
                     "raw": FieldFormat.RAW,
                     "addressName": FieldFormat.ADDRESS_NAME,
                     "calldata": FieldFormat.CALL_DATA,
@@ -331,6 +325,18 @@ class LLMInference:
                     "date": FieldFormat.DATE,
                     "duration": FieldFormat.DURATION,
                     "unit": FieldFormat.UNIT,
+                    "enum": FieldFormat.RAW,  # ENUM not in current FieldFormat, use RAW
+                    # Legacy uppercase versions for backwards compatibility
+                    "RAW": FieldFormat.RAW,
+                    "ADDRESS_NAME": FieldFormat.ADDRESS_NAME,
+                    "CALL_DATA": FieldFormat.CALL_DATA,
+                    "AMOUNT": FieldFormat.AMOUNT,
+                    "TOKEN_AMOUNT": FieldFormat.TOKEN_AMOUNT,
+                    "NFT_NAME": FieldFormat.NFT_NAME,
+                    "DATE": FieldFormat.DATE,
+                    "DURATION": FieldFormat.DURATION,
+                    "UNIT": FieldFormat.UNIT,
+                    "ENUM": FieldFormat.RAW,
                 }
                 
                 field_format = format_mapping.get(format_name, FieldFormat.RAW)

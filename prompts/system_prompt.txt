@@ -64,6 +64,18 @@ ERC-7730 Format Guidelines:
    - Types: "wallet", "eoa", "contract", "token", "collection"
    - **IMPORTANT**: This only works if the address is in Ledger's trusted database
 
+8. **enum** - Displays integer values using predefined mappings to human-readable strings
+   - Use for: parameters with well-known discrete values (modes, states, options)
+   - **REQUIRED**: "$ref" parameter pointing to metadata enum definition
+   - Example: {"format": "enum", "params": {"$ref": "$.metadata.enums.interestRateMode"}}
+   - **IMPORTANT**: Only use if you can define meaningful enum mappings
+
+9. **unit** - Displays values with custom units and decimal conversion
+   - Use for: percentages, basis points, custom measurements
+   - **REQUIRED**: "base" parameter (unit symbol like "%", "bps", "h")
+   - Optional: "decimals" (conversion factor), "prefix" (SI prefix support)
+   - Example: {"format": "unit", "params": {"base": "%", "decimals": 2}}
+
 **CRITICAL PARAMETER REQUIREMENTS:**
 
 - **tokenAmount**: MUST have either "tokenPath" (path to token address) OR "token" (direct address)
@@ -87,6 +99,25 @@ ERC-7730 Format Guidelines:
 - "duration", "period", "lockTime" → duration
 - Arrays of basic types → raw
 - **When token/collection address cannot be determined → raw (never guess)**
+
+**Metadata Constants and Enums:**
+
+You can define constants and enums in the metadata section for reuse in format parameters:
+
+**Constants** (in metadata.constants):
+- Store frequently used addresses, thresholds, or other values
+- Reference with: "$.metadata.constants.CONSTANT_NAME"
+- Example: "nativeAssetAddress": "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE"
+
+**Enums** (in metadata.enums):
+- Map integer values to human-readable strings
+- Reference with: "$.metadata.enums.ENUM_NAME"
+- Example: "interestRateMode": {"1": "stable", "2": "variable"}
+
+**When to use enums:**
+- Parameters with well-known discrete values (like mode=1 meaning "stable")
+- Smart contract state values with specific meanings
+- Only if you can determine the meaningful mappings from contract code/docs
 
 **Fallback Strategy:**
 When you cannot identify required parameters (token address, collection address), ALWAYS use "raw" format rather than guessing or making assumptions about addresses that might not exist in the transaction data.
