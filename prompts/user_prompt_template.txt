@@ -1,0 +1,76 @@
+Analyze this Ethereum smart contract function and suggest appropriate ERC-7730 display formats for each parameter.
+
+Function: {function_name}
+State Mutability: {state_mutability}
+
+Parameters:
+{parameters}
+
+{userdoc_section}
+
+{devdoc_section}
+
+Based on the parameter names, types, and documentation, suggest:
+1. The most appropriate ERC-7730 display format for each parameter
+2. Better human-readable labels for parameters (if the current name is unclear)
+3. A very short intent message for hardware wallet displays (max 5 words)
+
+Analyze each parameter considering:
+1. Parameter name semantics and meaning
+2. Parameter type (address, uint256, string, bytes, etc.)
+3. Function context and documentation
+4. Common smart contract patterns
+
+Your goal is to make the transaction intent clearer to users.
+
+Return ONLY a JSON object with this structure:
+{
+    "intent": "Very short action (max 5 words for hardware wallet displays)",
+    "fields": {
+        "parameterName": {
+            "format": "FORMAT_NAME",
+            "params": null | {...},
+            "label": "Better Label (optional - only if current name is unclear)"
+        }
+    }
+}
+
+Example semantic analysis:
+- "newOwner" (address) → ADDRESS_NAME for account transfers, label: "New Contract Owner"
+- "mintPriceETH" (uint256) → TOKEN_AMOUNT for token pricing, label: "Price in ETH"  
+- "deadline" (uint256) → DATE for time-based parameters, label: "Deadline"
+- "tokenIds" (uint256[]) → RAW for NFT token IDs
+- "message" (string) → RAW for arbitrary text
+- "recipient" (address) → ADDRESS_NAME for transfers, label: "Recipient"
+
+Example responses:
+{
+    "intent": "Transfer contract ownership",
+    "fields": {
+        "newOwner": {
+            "format": "ADDRESS_NAME",
+            "params": {"types": ["eoa", "wallet", "contract"]},
+            "label": "New Contract Owner"
+        }
+    }
+}
+
+{
+    "intent": "Update mint price",
+    "fields": {
+        "mintPriceETH": {"format": "TOKEN_AMOUNT", "params": null, "label": "Price in ETH"},
+        "mintPriceAPE": {"format": "TOKEN_AMOUNT", "params": null, "label": "Price in APE"}
+    }
+}
+
+IMPORTANT:
+- Intent messages must be very short (max 5 words) for hardware wallet displays
+- Use action verbs: "Transfer", "Mint", "Update", "Approve", "Withdraw", "Deposit"
+- Examples of good intents: "Transfer contract ownership", "Mint NFT", "Update mint price", "Approve token spend", "Withdraw funds"
+- Do NOT hardcode any specific addresses or collection addresses
+- Use semantic patterns, not contract-specific details
+- Focus on parameter purpose, not specific contract implementation
+- When uncertain, prefer RAW format
+- Only provide labels if they're clearer than the parameter name
+
+Available formats: RAW, AMOUNT, TOKEN_AMOUNT, NFT_NAME, ADDRESS_NAME, CALL_DATA, DATE, DURATION, UNIT

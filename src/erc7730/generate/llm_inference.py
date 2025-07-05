@@ -1,5 +1,6 @@
 import json
 import os
+from pathlib import Path
 from typing import Any, NamedTuple
 
 from openai import OpenAI
@@ -40,6 +41,9 @@ class LLMInference:
         
         # Cache LLM responses to avoid redundant API calls
         self._cache: dict[str, FunctionSuggestion] = {}
+        
+        # Load prompts from external files
+        self._load_prompts()
 
     def infer_field_formats(
         self,
@@ -163,160 +167,56 @@ class LLMInference:
 
     def _generate_prompt(self, context: dict[str, Any]) -> str:
         """Generate prompt for LLM based on function context."""
-        prompt = f"""
-Analyze this Ethereum smart contract function and suggest appropriate ERC-7730 display formats for each parameter.
-
-Function: {context['name']}
-State Mutability: {context['state_mutability']}
-
-Parameters:
-"""
+        # Build parameters section
+        parameters = ""
         for param in context['inputs']:
-            prompt += f"- {param.get('name', 'unknown')}: {param.get('type', 'unknown')}\n"
+            parameters += f"- {param.get('name', 'unknown')}: {param.get('type', 'unknown')}\n"
         
+        # Build documentation sections
+        userdoc_section = ""
         if context.get('userdoc'):
-            prompt += f"\nUser Documentation:\n{json.dumps(context['userdoc'], indent=2)}\n"
+            userdoc_section = f"\nUser Documentation:\n{json.dumps(context['userdoc'], indent=2)}\n"
         
+        devdoc_section = ""
         if context.get('devdoc'):
-            prompt += f"\nDeveloper Documentation:\n{json.dumps(context['devdoc'], indent=2)}\n"
+            devdoc_section = f"\nDeveloper Documentation:\n{json.dumps(context['devdoc'], indent=2)}\n"
         
-        prompt += """
-Based on the parameter names, types, and documentation, suggest:
-1. The most appropriate ERC-7730 display format for each parameter
-2. Better human-readable labels for parameters (if the current name is unclear)
-3. A very short intent message for hardware wallet displays (max 5 words)
-
-Analyze each parameter considering:
-1. Parameter name semantics and meaning
-2. Parameter type (address, uint256, string, bytes, etc.)
-3. Function context and documentation
-4. Common smart contract patterns
-
-Your goal is to make the transaction intent clearer to users.
-
-Return ONLY a JSON object with this structure:
-{
-    "intent": "Very short action (max 5 words for hardware wallet displays)",
-    "fields": {
-        "parameterName": {
-            "format": "FORMAT_NAME",
-            "params": null | {...},
-            "label": "Better Label (optional - only if current name is unclear)"
-        }
-    }
-}
-
-Example semantic analysis:
-- "newOwner" (address) → ADDRESS_NAME for account transfers, label: "New Contract Owner"
-- "mintPriceETH" (uint256) → TOKEN_AMOUNT for token pricing, label: "Price in ETH"  
-- "deadline" (uint256) → DATE for time-based parameters, label: "Deadline"
-- "tokenIds" (uint256[]) → RAW for NFT token IDs
-- "message" (string) → RAW for arbitrary text
-- "recipient" (address) → ADDRESS_NAME for transfers, label: "Recipient"
-
-Example responses:
-{
-    "intent": "Transfer contract ownership",
-    "fields": {
-        "newOwner": {
-            "format": "ADDRESS_NAME",
-            "params": {"types": ["eoa", "wallet", "contract"]},
-            "label": "New Contract Owner"
-        }
-    }
-}
-
-{
-    "intent": "Update mint price",
-    "fields": {
-        "mintPriceETH": {"format": "TOKEN_AMOUNT", "params": null, "label": "Price in ETH"},
-        "mintPriceAPE": {"format": "TOKEN_AMOUNT", "params": null, "label": "Price in APE"}
-    }
-}
-
-IMPORTANT:
-- Intent messages must be very short (max 5 words) for hardware wallet displays
-- Use action verbs: "Transfer", "Mint", "Update", "Approve", "Withdraw", "Deposit"
-- Examples of good intents: "Transfer contract ownership", "Mint NFT", "Update mint price", "Approve token spend", "Withdraw funds"
-- Do NOT hardcode any specific addresses or collection addresses
-- Use semantic patterns, not contract-specific details
-- Focus on parameter purpose, not specific contract implementation
-- When uncertain, prefer RAW format
-- Only provide labels if they're clearer than the parameter name
-
-Available formats: RAW, AMOUNT, TOKEN_AMOUNT, NFT_NAME, ADDRESS_NAME, CALL_DATA, DATE, DURATION, UNIT
-"""
+        # Format the template with actual values
+        return self.user_prompt_template.format(
+            function_name=context['name'],
+            state_mutability=context['state_mutability'],
+            parameters=parameters,
+            userdoc_section=userdoc_section,
+            devdoc_section=devdoc_section
+        )
         return prompt
 
+    def _load_prompts(self) -> None:
+        """Load prompts from external text files."""
+        # Get the directory containing this file
+        current_dir = Path(__file__).parent
+        # Navigate to the prompts directory
+        prompts_dir = current_dir.parent.parent.parent / "prompts"
+        
+        # Load system prompt
+        system_prompt_path = prompts_dir / "system_prompt.txt"
+        if system_prompt_path.exists():
+            with open(system_prompt_path, 'r', encoding='utf-8') as f:
+                self.system_prompt = f.read()
+        else:
+            raise FileNotFoundError(f"System prompt file not found: {system_prompt_path}")
+        
+        # Load user prompt template
+        user_prompt_path = prompts_dir / "user_prompt_template.txt"
+        if user_prompt_path.exists():
+            with open(user_prompt_path, 'r', encoding='utf-8') as f:
+                self.user_prompt_template = f.read()
+        else:
+            raise FileNotFoundError(f"User prompt template file not found: {user_prompt_path}")
+    
     def _get_system_prompt(self) -> str:
         """Get system prompt for LLM."""
-        return """You are an expert in Ethereum smart contracts and ERC-7730 clear signing standards.
-
-BACKGROUND - ERC-7730 Clear Signing:
-ERC-7730 establishes a standardized method for clear signing contracts and messages on EVM chains. The goal is to help users understand exactly what they're signing by converting technical function calls into clear, understandable language.
-
-KEY OBJECTIVES:
-- Enhanced Transaction Transparency: Convert raw transaction data into human-readable format
-- Security: Help users identify potentially malicious transactions by making intent clear
-- User Experience: Replace cryptic hex values and technical parameters with meaningful descriptions
-
-CLEAR SIGNING PRINCIPLES:
-- Show users what they're actually agreeing to (e.g., "Transfer 100 USDC to Alice" instead of raw calldata)
-- Display amounts with proper units and decimals
-- Show addresses with recognizable names when possible
-- Make time-based parameters readable (dates, durations)
-- Highlight important transaction details
-
-Your task is to analyze smart contract function parameters and suggest appropriate display formats that will help users understand what they are signing clearly and safely.
-
-IMPORTANT: Never hardcode specific addresses, collection addresses, or contract-specific values. Focus on semantic analysis and general patterns that improve transaction comprehension.
-
-ERC-7730 Format Guidelines:
-
-1. **RAW** - Default format, displays raw values
-   - Use for: unclear cases, generic data, boolean flags, arrays of basic types
-   
-2. **ADDRESS_NAME** - Displays trusted names for addresses
-   - Use for: addresses representing accounts, contracts, tokens, NFTs
-   - Types: "wallet", "eoa", "contract", "token", "collection"
-   - Example: {"format": "ADDRESS_NAME", "params": {"types": ["eoa", "wallet"]}}
-   - NEVER include specific addresses in params
-
-3. **AMOUNT** - Displays numerical amounts in native currency (ETH)
-   - Use for: ETH amounts, gas fees, native currency values
-   - Example: {"format": "AMOUNT", "params": null}
-
-4. **TOKEN_AMOUNT** - Displays token amounts with proper decimals and ticker
-   - Use for: ERC-20 token quantities, token prices, token-denominated values
-   - Usually no params needed (decimals derived from token metadata)
-   - Example: {"format": "TOKEN_AMOUNT", "params": null}
-
-5. **NFT_NAME** - Displays NFT names from collections
-   - Use for: NFT contract addresses when in NFT contract context
-   - Example: {"format": "NFT_NAME", "params": {"collectionPath": "nftCollectionParamName"}}
-   - NEVER hardcode collection addresses
-   - DO NOT use this for nft token IDs
-   - ONLY use when you can infer this is an NFT-related contract address
-
-6. **DATE** - Displays timestamps and block heights as dates
-   - Use for: deadlines, expiration times, timestamps
-   - Example: {"format": "DATE", "params": {"encoding": "timestamp"}}
-
-7. **DURATION** - Displays time periods in HH:MM:ss
-   - Use for: time intervals, lock periods
-   - Example: {"format": "DURATION", "params": null}
-
-Semantic Analysis Guidelines:
-- "owner", "recipient", "to", "from" → ADDRESS_NAME with appropriate types
-- "price", "amount", "value" + token context → TOKEN_AMOUNT  
-- "price", "amount", "value" + ETH context → AMOUNT
-- "tokenId", "id" + NFT context → Consider NFT_NAME (only if clearly NFT-related)
-- "deadline", "expiry", "timestamp", "time" → DATE
-- "duration", "period" → DURATION
-- Arrays of basic types → Usually RAW
-- Unknown/unclear → RAW
-
-Focus on making the transaction intent clear to users without assuming specific contract details."""
+        return self.system_prompt
 
     def _parse_llm_response(self, response: str, function_data: Function) -> FunctionSuggestion:
         """Parse LLM response and convert to expected format."""
