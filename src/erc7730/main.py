@@ -155,7 +155,7 @@ def command_resolve(
 )
 def command_generate(
     chain_id: Annotated[int | None, Option(help="The EIP-155 chain id")] = None,
-    address: Annotated[Address | None, Option(help="The contract address")] = None,
+    address: Annotated[str | None, Option(help="The contract address")] = None,
     abi: Annotated[Path | None, Option(help="Path to a JSON ABI file (to generate a calldata descriptor)")] = None,
     schema: Annotated[Path | None, Option(help="Path to an EIP-712 schema (to generate an EIP-712 descriptor)")] = None,
     owner: Annotated[str | None, Option(help="The display name of the owner or target of the contract")] = None,
@@ -197,7 +197,7 @@ def command_generate(
             
         # Override command line parameters with environment variables
         chain_id = int(env_chain_id)
-        address = Address(env_address)
+        address = env_address.lower()  # Convert to Address format
         local_artifact_json = env_artifact
         local_source_path = Path(env_source_path) if env_source_path else None
         
@@ -220,6 +220,9 @@ def command_generate(
         if address is None:
             print("--address is required when not using --local")
             raise Exit(1)
+        
+        # Convert address to proper format
+        address = address.lower()
             
         if schema is not None:
             with open(schema, "rb") as f:
