@@ -110,6 +110,81 @@ def extract_main_contract_source(sourcify_obj: SourcifyContractData) -> tuple[st
     return path, cname, source_code
 
 
+def extract_function_and_constants(source_code: str, function_name: str) -> tuple[str | None, str]:
+    """
+    Extract a specific function and contract definitions from Solidity source code.
+    
+    Parameters
+    ----------
+    source_code : str
+        The full Solidity source code
+    function_name : str
+        Name of the function to extract
+        
+    Returns
+    -------
+    tuple
+        function_code – the extracted function code (None if not found)
+        contract_code – contract definitions
+    """
+    lines = source_code.split('\n')
+    function_code = None
+    constants = []
+    
+    # Extract the specific function
+    function_lines = []
+    in_function = False
+    brace_count = 0
+    
+    for i, line in enumerate(lines):
+        # Look for function definition
+        if f"function {function_name}" in line and not in_function:
+            in_function = True
+            # Include any comments above the function
+            start_idx = max(0, i - 3)
+            for j in range(start_idx, i):
+                if lines[j].strip().startswith('//') or lines[j].strip().startswith('/*') or lines[j].strip().startswith('*'):
+                    function_lines.append(lines[j])
+            
+        if in_function:
+            function_lines.append(line)
+            # Count braces to find function end
+            brace_count += line.count('{') - line.count('}')
+            
+            # Function ends when braces are balanced and we've seen at least one opening brace
+            if brace_count == 0 and '{' in ''.join(function_lines):
+                break
+    
+    if function_lines:
+        function_code = '\n'.join(function_lines)
+    
+    # Extract constants and state variables
+    in_contract = False
+    for line in lines:
+        stripped = line.strip()
+        
+        # Detect contract start
+        if stripped.startswith('contract ') and '{' in line:
+            in_contract = True
+            continue
+            
+        if in_contract:
+            # Stop at first function or major section
+            if (stripped.startswith('function ') or 
+                stripped.startswith('constructor') or
+                stripped.startswith('modifier ') or
+                (stripped.startswith('event ') and not any(keyword in stripped for keyword in ['uint', 'string', 'bool', 'address']))):
+                break
+                
+            # Include state variables, constants, and mappings
+            if stripped:
+                constants.append(line)
+    
+    constants_code = '\n'.join(constants) if constants else ""
+    
+    return function_code, constants_code
+
+
 @cache
 def get_supported_chains() -> list[EtherscanChain]:
     """

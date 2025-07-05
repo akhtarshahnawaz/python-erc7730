@@ -6,7 +6,7 @@ from typing import Any, NamedTuple
 from openai import OpenAI
 
 from erc7730.model.abi import Function
-from erc7730.common.client import SourcifyContractData, extract_main_contract_source
+from erc7730.common.client import SourcifyContractData, extract_main_contract_source, extract_function_and_constants
 from erc7730.model.display import FieldFormat, AddressNameType, DateEncoding
 from erc7730.model.input.display import InputFieldParameters, InputAddressNameParameters, InputTokenAmountParameters, InputDateParameters
 
@@ -165,11 +165,18 @@ class LLMInference:
             
             # Add source code if available
             try:
-                path, contract_name, source_code = extract_main_contract_source(contract_data)
+                path, contract_name, full_source_code = extract_main_contract_source(contract_data)
+                # Extract just the specific function being analyzed
+                function_code, constants = extract_function_and_constants(full_source_code, function_data.name or "")
+
+                print('----------START CONSTANTS CODE----------')
+                print(constants)
+                print('----------END CONSTANTS CODE----------')
+                
                 context["source_info"] = {
                     "path": path,
                     "contract_name": contract_name,
-                    "source_code": source_code
+                    "function_code": function_code
                 }
             except ValueError as e:
                 # Source code extraction failed, continue without it
@@ -205,43 +212,13 @@ class LLMInference:
         source_section = ""
         if context.get('source_info'):
             source_info = context['source_info']
-            source_code = source_info['source_code']
+            function_code = source_info.get('function_code')
+            function_name = context['name']
             
-            # Truncate source code if it's too long (keep under ~4000 chars for LLM context)
-            if len(source_code) > 4000:
-                # Try to find the specific function in the source code
-                function_name = context['name']
-                if function_name and f"function {function_name}" in source_code:
-                    # Extract relevant function and some context
-                    lines = source_code.split('\n')
-                    function_lines = []
-                    in_function = False
-                    brace_count = 0
-                    
-                    for line in lines:
-                        if f"function {function_name}" in line:
-                            in_function = True
-                        
-                        if in_function:
-                            function_lines.append(line)
-                            brace_count += line.count('{') - line.count('}')
-                            
-                            if brace_count == 0 and '{' in line:
-                                break
-                    
-                    if function_lines:
-                        source_code = '\n'.join(function_lines)
-                        source_section = f"\nRelevant Source Code (function {function_name}):\n```solidity\n{source_code}\n```\n"
-                    else:
-                        # Fallback: show first part of contract
-                        source_code = source_code[:4000] + "... [truncated]"
-                        source_section = f"\nContract Source Code (from {source_info['path']}, truncated):\n```solidity\n{source_code}\n```\n"
-                else:
-                    # Show first part of contract
-                    source_code = source_code[:4000] + "... [truncated]"
-                    source_section = f"\nContract Source Code (from {source_info['path']}, truncated):\n```solidity\n{source_code}\n```\n"
+            if function_code:
+                source_section = f"\nFunction Source Code ({function_name}):\n```solidity\n{function_code}\n```\n"
             else:
-                source_section = f"\nContract Source Code (from {source_info['path']}):\n```solidity\n{source_code}\n```\n"
+                source_section = f"\nNote: Source code for function '{function_name}' could not be extracted from {source_info['path']}\n"
         
         # Format the template with actual values
         return self.user_prompt_template % {
