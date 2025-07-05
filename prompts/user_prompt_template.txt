@@ -38,19 +38,20 @@ Return ONLY a JSON object with this structure:
 }
 
 Example semantic analysis:
-- "newOwner" (address) → ADDRESS_NAME for account transfers, label: "New Contract Owner"
-- "mintPriceETH" (uint256) → TOKEN_AMOUNT for token pricing, label: "Price in ETH"  
-- "deadline" (uint256) → DATE for time-based parameters, label: "Deadline"
-- "tokenIds" (uint256[]) → RAW for NFT token IDs
-- "message" (string) → RAW for arbitrary text
-- "recipient" (address) → ADDRESS_NAME for transfers, label: "Recipient"
+- "newOwner" (address) → addressName for account transfers, label: "New Contract Owner"
+- "tokenAddress" (address) → addressName for token contracts, label: "Token Contract"
+- "deadline" (uint256) → date with timestamp encoding, label: "Deadline"
+- "tokenIds" (uint256[]) → raw for NFT token IDs (use raw unless collection address is available)
+- "message" (string) → raw for arbitrary text
+- "recipient" (address) → addressName for transfers, label: "Recipient"
+- "amount" (uint256) with token parameter → tokenAmount if token address available
 
 Example responses:
 {
     "intent": "Transfer contract ownership",
     "fields": {
         "newOwner": {
-            "format": "ADDRESS_NAME",
+            "format": "addressName",
             "params": {"types": ["eoa", "wallet", "contract"]},
             "label": "New Contract Owner"
         }
@@ -58,10 +59,29 @@ Example responses:
 }
 
 {
-    "intent": "Update mint price",
+    "intent": "Approve token spending",
     "fields": {
-        "mintPriceETH": {"format": "TOKEN_AMOUNT", "params": null, "label": "Price in ETH"},
-        "mintPriceAPE": {"format": "TOKEN_AMOUNT", "params": null, "label": "Price in APE"}
+        "spender": {
+            "format": "addressName", 
+            "params": {"types": ["contract"]},
+            "label": "Spender Contract"
+        },
+        "amount": {
+            "format": "tokenAmount",
+            "params": {"tokenPath": "@.to"},
+            "label": "Amount to Approve"
+        }
+    }
+}
+
+{
+    "intent": "Set trading deadline",
+    "fields": {
+        "deadline": {
+            "format": "date",
+            "params": {"encoding": "timestamp"},
+            "label": "Trading Deadline"
+        }
     }
 }
 
@@ -72,7 +92,12 @@ IMPORTANT:
 - Do NOT hardcode any specific addresses or collection addresses
 - Use semantic patterns, not contract-specific details
 - Focus on parameter purpose, not specific contract implementation
-- When uncertain, prefer RAW format
+- When uncertain, prefer "raw" format
 - Only provide labels if they're clearer than the parameter name
 
-Available formats: RAW, AMOUNT, TOKEN_AMOUNT, NFT_NAME, ADDRESS_NAME, CALL_DATA, DATE, DURATION, UNIT
+Available formats: raw, amount, tokenAmount, nftName, addressName, calldata, date, duration, unit, enum
+
+Remember: 
+- Use lowercase format names
+- tokenAmount and nftName require specific parameters or will fail
+- When in doubt about required parameters, use "raw" format

@@ -21,47 +21,74 @@ IMPORTANT: Never hardcode specific addresses, collection addresses, or contract-
 
 ERC-7730 Format Guidelines:
 
-1. **RAW** - Default format, displays raw values
-   - Use for: unclear cases, generic data, boolean flags, arrays of basic types
-   
-2. **ADDRESS_NAME** - Displays trusted names for addresses
-   - Use for: addresses representing accounts, contracts, tokens, NFTs
-   - Types: "wallet", "eoa", "contract", "token", "collection"
-   - Example: {"format": "ADDRESS_NAME", "params": {"types": ["eoa", "wallet"]}}
-   - NEVER include specific addresses in params
+1. **raw** - Default format, displays raw integer values without conversion
+   - Use for: unclear cases, generic data, boolean flags, arrays of basic types, simple counters
+   - Parameters: None required
+   - Example: {"format": "raw"}
 
-3. **AMOUNT** - Displays numerical amounts in native currency (ETH)
-   - Use for: ETH amounts, gas fees, native currency values
-   - Example: {"format": "AMOUNT", "params": null}
+2. **amount** - Displays native cryptocurrency amounts (ETH, converted from wei)
+   - Use for: ETH amounts, gas fees, native currency values, transaction values
+   - Parameters: None required
+   - Example: {"format": "amount"}
 
-4. **TOKEN_AMOUNT** - Displays token amounts with proper decimals and ticker
+3. **tokenAmount** - Displays token amounts with proper decimals and ticker
    - Use for: ERC-20 token quantities, token prices, token-denominated values
-   - Usually no params needed (decimals derived from token metadata)
-   - Example: {"format": "TOKEN_AMOUNT", "params": null}
+   - **REQUIRED**: Either "tokenPath" (path to token address) OR "token" (direct token address)
+   - Optional: "threshold", "message", "nativeCurrencyAddress"
+   - Example with path: {"format": "tokenAmount", "params": {"tokenPath": "tokenAddress"}}
+   - Example with direct: {"format": "tokenAmount", "params": {"token": "0x..."}}
+   - **IMPORTANT**: If you cannot identify the token address or path, use "raw" instead
 
-5. **NFT_NAME** - Displays NFT names from collections
-   - Use for: NFT contract addresses when in NFT contract context
-   - Example: {"format": "NFT_NAME", "params": {"collectionPath": "nftCollectionParamName"}}
-   - NEVER hardcode collection addresses
-   - DO NOT use this for nft token IDs
-   - ONLY use when you can infer this is an NFT-related contract address
+4. **nftName** - Displays NFT names from collections with token ID
+   - Use for: NFT token IDs when collection context is available
+   - **REQUIRED**: Either "collectionPath" (path to collection address) OR "collection" (direct collection address)
+   - Example with path: {"format": "nftName", "params": {"collectionPath": "collectionAddress"}}
+   - Example with direct: {"format": "nftName", "params": {"collection": "0x..."}}
+   - **IMPORTANT**: If you cannot identify the collection address or path, use "raw" instead
 
-6. **DATE** - Displays timestamps and block heights as dates
-   - Use for: deadlines, expiration times, timestamps
-   - Example: {"format": "DATE", "params": {"encoding": "timestamp"}}
+5. **date** - Displays timestamps and block heights as human-readable dates
+   - Use for: deadlines, expiration times, timestamps, block numbers
+   - **REQUIRED**: "encoding" parameter - either "timestamp" (Unix timestamp) or "blockheight" (Ethereum block)
+   - Example: {"format": "date", "params": {"encoding": "timestamp"}}
+   - Example: {"format": "date", "params": {"encoding": "blockheight"}}
 
-7. **DURATION** - Displays time periods in HH:MM:ss
-   - Use for: time intervals, lock periods
-   - Example: {"format": "DURATION", "params": null}
+6. **duration** - Displays time periods in HH:MM:ss format
+   - Use for: time intervals, lock periods, waiting times
+   - Parameters: None required
+   - Example: {"format": "duration"}
 
-Semantic Analysis Guidelines:
-- "owner", "recipient", "to", "from" → ADDRESS_NAME with appropriate types
-- "price", "amount", "value" + token context → TOKEN_AMOUNT  
-- "price", "amount", "value" + ETH context → AMOUNT
-- "tokenId", "id" + NFT context → Consider NFT_NAME (only if clearly NFT-related)
-- "deadline", "expiry", "timestamp", "time" → DATE
-- "duration", "period" → DURATION
-- Arrays of basic types → Usually RAW
-- Unknown/unclear → RAW
+7. **addressName** - Displays trusted names for addresses (if available in Ledger database)
+   - Use for: addresses representing accounts, contracts, tokens, NFTs
+   - Optional: "types" array to specify expected address types
+   - Example: {"format": "addressName", "params": {"types": ["eoa", "wallet"]}}
+   - Types: "wallet", "eoa", "contract", "token", "collection"
+   - **IMPORTANT**: This only works if the address is in Ledger's trusted database
 
-Focus on making the transaction intent clear to users without assuming specific contract details.
+**CRITICAL PARAMETER REQUIREMENTS:**
+
+- **tokenAmount**: MUST have either "tokenPath" (path to token address) OR "token" (direct address)
+  - If you cannot identify where the token address comes from, use "raw" instead
+  - Example: If function has parameter "token" or "@.to" is the token address
+
+- **nftName**: MUST have either "collectionPath" (path to collection address) OR "collection" (direct address)  
+  - Only use for token IDs when you can identify the collection address
+  - If you cannot identify the collection address, use "raw" instead
+
+- **date**: MUST have "encoding" parameter ("timestamp" or "blockheight")
+  - Use "timestamp" for Unix timestamps (most common)
+  - Use "blockheight" for Ethereum block numbers
+
+**Semantic Analysis Guidelines:**
+- "owner", "recipient", "to", "from" → addressName with appropriate types
+- "price", "amount", "value" + identifiable token → tokenAmount (if token address available)
+- "price", "amount", "value" + ETH context → amount (for native currency)
+- "tokenId", "id" + identifiable collection → nftName (if collection address available)
+- "deadline", "expiry", "timestamp", "time" → date with appropriate encoding
+- "duration", "period", "lockTime" → duration
+- Arrays of basic types → raw
+- **When token/collection address cannot be determined → raw (never guess)**
+
+**Fallback Strategy:**
+When you cannot identify required parameters (token address, collection address), ALWAYS use "raw" format rather than guessing or making assumptions about addresses that might not exist in the transaction data.
+
+Focus on making the transaction intent clear to users without assuming specific contract details or hardcoding addresses.
