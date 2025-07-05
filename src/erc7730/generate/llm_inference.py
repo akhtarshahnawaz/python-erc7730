@@ -101,6 +101,10 @@ class LLMInference:
                 print(f"Warning: Empty content in LLM response for function {function_data.name or 'unknown'}")
                 return {}
             
+            # Debug: print the raw LLM response
+            if os.environ.get("DEBUG") == "1":
+                print(f"Raw LLM response for {function_data.name}: {repr(result)}")
+            
             function_suggestion = self._parse_llm_response(result, function_data)
             
             # Cache the results
@@ -250,7 +254,13 @@ class LLMInference:
             if os.environ.get("DEBUG") == "1":
                 print(f"Debug: Attempting to parse LLM response: {cleaned_response[:200]}...")
             
-            parsed = json.loads(cleaned_response)
+            try:
+                parsed = json.loads(cleaned_response)
+            except json.JSONDecodeError as json_error:
+                print(f"Warning: Failed to parse LLM response as JSON: {json_error}")
+                print(f"Raw response: {repr(response)}")
+                print(f"Cleaned response: {cleaned_response}")
+                return FunctionSuggestion(fields={}, intent=None)
             
             # Extract intent
             intent = parsed.get("intent")
