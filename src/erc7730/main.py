@@ -154,27 +154,79 @@ def command_resolve(
     """,
 )
 def command_generate(
-    chain_id: Annotated[int, Option(help="The EIP-155 chain id")],
-    address: Annotated[Address, Option(help="The contract address")],
+    chain_id: Annotated[int | None, Option(help="The EIP-155 chain id")] = None,
+    address: Annotated[Address | None, Option(help="The contract address")] = None,
     abi: Annotated[Path | None, Option(help="Path to a JSON ABI file (to generate a calldata descriptor)")] = None,
     schema: Annotated[Path | None, Option(help="Path to an EIP-712 schema (to generate an EIP-712 descriptor)")] = None,
     owner: Annotated[str | None, Option(help="The display name of the owner or target of the contract")] = None,
     legal_name: Annotated[str | None, Option(help="The full legal name of the owner")] = None,
     url: Annotated[str | None, Option(help="URL with more info on the entity interacted with")] = None,
     auto: Annotated[bool, Option(help="Enable LLM-based automatic inference for generating display formats")] = False,
+    local: Annotated[bool, Option(help="Use local artifact data from environment variables (set by Hardhat plugin)")] = False,
+    output: Annotated[Path | None, Option(help="Output file path for the generated ERC-7730 descriptor")] = None,
 ) -> None:
     if schema is not None and abi is not None:
         print("Cannot specify both ABI and schema.")
         raise Exit(1)
+    
+    if local and (abi is not None or schema is not None):
+        print("Cannot specify both --local and --abi/--schema.")
+        raise Exit(1)
+    
     schema_buffer = None
     abi_buffer = None
+    local_artifact_json = None
+    local_source_path = None
 
-    if schema is not None:
-        with open(schema, "rb") as f:
-            schema_buffer = f.read()
-    elif abi is not None:
-        with open(abi, "rb") as f:
-            abi_buffer = f.read()
+    if local:
+        # Get data from environment variables set by Hardhat plugin
+        env_chain_id = os.environ.get("CHAIN_ID")
+        env_address = os.environ.get("DEPLOYED_CONTRACT_ADDRESS")
+        env_artifact = os.environ.get("CONTRACT_ARTIFACT")
+        env_source_path = os.environ.get("CONTRACT_SOURCE_PATH")
+        
+        if not env_chain_id:
+            print("CHAIN_ID environment variable is required when using --local")
+            raise Exit(1)
+        if not env_address:
+            print("DEPLOYED_CONTRACT_ADDRESS environment variable is required when using --local")
+            raise Exit(1)
+        if not env_artifact:
+            print("CONTRACT_ARTIFACT environment variable is required when using --local")
+            raise Exit(1)
+            
+        # Override command line parameters with environment variables
+        chain_id = int(env_chain_id)
+        address = Address(env_address)
+        local_artifact_json = env_artifact
+        local_source_path = Path(env_source_path) if env_source_path else None
+        
+        # Parse artifact JSON to extract ABI
+        try:
+            artifact_data = json.loads(env_artifact)
+            if "abi" in artifact_data:
+                abi_buffer = json.dumps(artifact_data["abi"]).encode('utf-8')
+            else:
+                print("No ABI found in artifact JSON from environment.")
+                raise Exit(1)
+        except json.JSONDecodeError as e:
+            print(f"Invalid JSON in CONTRACT_ARTIFACT environment variable: {e}")
+            raise Exit(1)
+    else:
+        # Normal mode - require chain_id and address
+        if chain_id is None:
+            print("--chain-id is required when not using --local")
+            raise Exit(1)
+        if address is None:
+            print("--address is required when not using --local")
+            raise Exit(1)
+            
+        if schema is not None:
+            with open(schema, "rb") as f:
+                schema_buffer = f.read()
+        elif abi is not None:
+            with open(abi, "rb") as f:
+                abi_buffer = f.read()
 
     descriptor = generate_descriptor(
         chain_id=chain_id,
@@ -185,8 +237,20 @@ def command_generate(
         legal_name=legal_name,
         url=HttpUrl(url) if url is not None else None,
         auto=auto,
+        local_artifact_json=local_artifact_json,
+        local_source_path=local_source_path,
     )
-    print(descriptor.to_json_string())
+    
+    result_json = descriptor.to_json_string()
+    
+    if output is not None:
+        # Write to file
+        with open(output, "w", encoding="utf-8") as f:
+            f.write(result_json)
+        print(f"ERC-7730 descriptor generated and saved to: {output}")
+    else:
+        # Print to stdout
+        print(result_json)
 
 
 @app.command(

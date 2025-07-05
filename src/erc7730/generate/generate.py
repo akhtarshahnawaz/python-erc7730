@@ -1,5 +1,6 @@
 import os
 from collections.abc import Generator
+from pathlib import Path
 from typing import Any, assert_never
 
 from caseswitcher import to_title
@@ -53,6 +54,8 @@ def generate_descriptor(
     legal_name: str | None = None,
     url: HttpUrl | None = None,
     auto: bool = False,
+    local_artifact_json: str | None = None,
+    local_source_path: Path | None = None,
 ) -> InputERC7730Descriptor:
     """
     Generate an ERC-7730 descriptor.
@@ -74,11 +77,15 @@ def generate_descriptor(
     
     # Get contract data for metadata inference if in auto mode
     contract_data = None
-    if auto and chain_id is not None and contract_address is not None:
-        try:
-            contract_data = get_contract_data(chain_id, contract_address)
-        except Exception as e:
-            print(f"Warning: Failed to fetch contract data for metadata inference: {e}")
+    if auto:
+        if local_artifact_json is not None:
+            # Create mock contract data from local artifact
+            contract_data = _create_mock_contract_data(local_artifact_json, local_source_path)
+        elif chain_id is not None and contract_address is not None:
+            try:
+                contract_data = get_contract_data(chain_id, contract_address)
+            except Exception as e:
+                print(f"Warning: Failed to fetch contract data for metadata inference: {e}")
     
     metadata = _generate_metadata(legal_name, owner, url, contract_data)
     display = _generate_display(trees, auto, chain_id, contract_address if auto else None, functions, metadata)
@@ -536,3 +543,70 @@ def _parse_constant_value(value: str, data_type: str) -> str | int | bool | floa
     
     # Return as string if we can't parse it
     return value
+
+
+def _create_mock_contract_data(artifact_json: str, source_path: Path | None) -> SourcifyContractData:
+    """Create a mock SourcifyContractData from local artifact and source file."""
+    import json
+    
+    try:
+        artifact_data = json.loads(artifact_json)
+    except json.JSONDecodeError as e:
+        print(f"Warning: Invalid artifact JSON: {e}")
+        return SourcifyContractData(abi=None, sources=None)
+    
+    # Extract ABI
+    abi = artifact_data.get("abi", [])
+    
+    # Extract metadata if available
+    metadata = artifact_data.get("metadata")
+    if isinstance(metadata, str):
+        try:
+            metadata = json.loads(metadata)
+        except json.JSONDecodeError:
+            metadata = None
+    
+    # Extract userdoc and devdoc if available
+    userdoc = artifact_data.get("userdoc")
+    devdoc = artifact_data.get("devdoc")
+    
+    # Create sources dict if source file is provided
+    sources = None
+    if source_path and source_path.exists():
+        try:
+            with open(source_path, 'r', encoding='utf-8') as f:
+                source_content = f.read()
+            
+            # Extract contract name from artifact
+            contract_name = artifact_data.get("contractName", "Contract")
+            
+            sources = {
+                str(source_path): {
+                    "content": source_content
+                }
+            }
+            
+            # If metadata has sources, use that structure instead
+            if metadata and "sources" in metadata:
+                sources = {}
+                for source_file, source_info in metadata["sources"].items():
+                    if source_file == str(source_path) or source_file.endswith(source_path.name):
+                        sources[source_file] = {
+                            "content": source_content
+                        }
+                        break
+                else:
+                    # Fallback: use the source path as key
+                    sources[str(source_path)] = {
+                        "content": source_content
+                    }
+        except Exception as e:
+            print(f"Warning: Could not read source file {source_path}: {e}")
+    
+    return SourcifyContractData(
+        abi=abi,
+        metadata=metadata,
+        userdoc=userdoc,
+        devdoc=devdoc,
+        sources=sources
+    )
