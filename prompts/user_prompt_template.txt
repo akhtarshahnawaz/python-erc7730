@@ -10,7 +10,9 @@ Parameters:
 
 %(devdoc_section)s
 
-Based on the parameter names, types, and documentation, suggest:
+%(source_section)s
+
+Based on the parameter names, types, documentation, and source code context, suggest:
 1. The most appropriate ERC-7730 display format for each parameter
 2. Better human-readable labels for parameters (if the current name is unclear)
 3. A very short intent message for hardware wallet displays (max 5 words)
@@ -18,8 +20,8 @@ Based on the parameter names, types, and documentation, suggest:
 Analyze each parameter considering:
 1. Parameter name semantics and meaning
 2. Parameter type (address, uint256, string, bytes, etc.)
-3. Function context and documentation
-4. Common smart contract patterns
+3. Function context, documentation, and source code implementation
+4. Common smart contract patterns and the specific contract's behavior
 
 Your goal is to make the transaction intent clearer to users.
 

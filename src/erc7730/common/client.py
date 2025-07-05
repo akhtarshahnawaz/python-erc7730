@@ -58,6 +58,56 @@ class SourcifyContractData(Model):
     userdoc: dict[str, Any] | None = None
     devdoc: dict[str, Any] | None = None
     proxyResolution: ProxyResolution | None = None
+    compilation: dict[str, Any] | None = None
+    sources: dict[str, dict[str, Any]] | None = None
+
+
+def extract_main_contract_source(sourcify_obj: SourcifyContractData) -> tuple[str, str, str]:
+    """
+    Return (file_path, contract_name, solidity_source) from a Sourcify JSON blob.
+
+    Parameters
+    ----------
+    sourcify_obj : SourcifyContractData
+        The parsed Sourcify verification response.
+
+    Returns
+    -------
+    tuple
+        path   – absolute / remapped path inside 'sources', e.g.
+                 '@aave/core-v3/contracts/…/InitializableImmutableAdminUpgradeabilityProxy.sol'
+        cname  – the contract name, e.g. 'InitializableImmutableAdminUpgradeabilityProxy'
+        source – the full Solidity code (string).
+    
+    Raises
+    ------
+    ValueError
+        If compilation data or sources are not available, or if the contract path is not found.
+    """
+    # Check if we have compilation data
+    if not sourcify_obj.compilation or not sourcify_obj.sources:
+        raise ValueError("Compilation data or sources not available in Sourcify response")
+    
+    # 1) Fully-qualified name is "path:ContractName"
+    fq_name = sourcify_obj.compilation.get("fullyQualifiedName")
+    if not fq_name:
+        raise ValueError("fullyQualifiedName not found in compilation data")
+    
+    if ":" not in fq_name:
+        raise ValueError(f"Invalid fullyQualifiedName format: {fq_name}")
+    
+    path, cname = fq_name.split(":", 1)
+
+    # 2) Look the path up in the 'sources' dict
+    try:
+        source_info = sourcify_obj.sources[path]
+        source_code = source_info.get("content")
+        if not source_code:
+            raise ValueError(f"Source content not found for path {path}")
+    except KeyError as e:
+        raise ValueError(f"Path {path} not found in sources") from e
+
+    return path, cname, source_code
 
 
 @cache
@@ -82,7 +132,7 @@ def get_contract_abis(chain_id: int, contract_address: Address) -> list[ABI]:
     try:
         contract_data = get(
             url=HttpUrl(f"https://{SOURCIFY}/server/v2/contract/{chain_id}/{contract_address}"),
-            fields="abi,metadata,userdoc,devdoc,proxyResolution",
+            fields="abi,metadata,userdoc,devdoc,proxyResolution,compilation,sources",
             model=SourcifyContractData,
         )
         
@@ -98,7 +148,7 @@ def get_contract_abis(chain_id: int, contract_address: Address) -> list[ABI]:
             try:
                 impl_contract_data = get(
                     url=HttpUrl(f"https://{SOURCIFY}/server/v2/contract/{chain_id}/{impl_address}"),
-                    fields="abi,metadata,userdoc,devdoc",
+                    fields="abi,metadata,userdoc,devdoc,compilation,sources",
                     model=SourcifyContractData,
                 )
                 if impl_contract_data.abi is not None:
@@ -141,7 +191,7 @@ def get_contract_data(chain_id: int, contract_address: Address) -> SourcifyContr
     try:
         contract_data = get(
             url=HttpUrl(f"https://{SOURCIFY}/server/v2/contract/{chain_id}/{contract_address}"),
-            fields="abi,metadata,userdoc,devdoc,proxyResolution",
+            fields="abi,metadata,userdoc,devdoc,proxyResolution,compilation,sources",
             model=SourcifyContractData,
         )
         
@@ -155,7 +205,7 @@ def get_contract_data(chain_id: int, contract_address: Address) -> SourcifyContr
             try:
                 impl_contract_data = get(
                     url=HttpUrl(f"https://{SOURCIFY}/server/v2/contract/{chain_id}/{impl_address}"),
-                    fields="abi,metadata,userdoc,devdoc",
+                    fields="abi,metadata,userdoc,devdoc,compilation,sources",
                     model=SourcifyContractData,
                 )
                 

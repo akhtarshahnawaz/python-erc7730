@@ -6,7 +6,7 @@ from typing import Any, NamedTuple
 from openai import OpenAI
 
 from erc7730.model.abi import Function
-from erc7730.common.client import SourcifyContractData
+from erc7730.common.client import SourcifyContractData, extract_main_contract_source
 from erc7730.model.display import FieldFormat, AddressNameType, DateEncoding
 from erc7730.model.input.display import InputFieldParameters, InputAddressNameParameters, InputTokenAmountParameters, InputDateParameters
 
@@ -74,6 +74,9 @@ class LLMInference:
         
         # Generate prompt for LLM
         prompt = self._generate_prompt(context)
+        print('----------START USER PROMPT----------')
+        print(prompt)
+        print('----------END USER PROMPT----------')
         
         try:
             response = self.client.chat.completions.create(
@@ -159,6 +162,19 @@ class LLMInference:
                 function_sig = self._get_function_signature(function_data)
                 if function_sig in contract_data.devdoc["methods"]:
                     context["devdoc"] = contract_data.devdoc["methods"][function_sig]
+            
+            # Add source code if available
+            try:
+                path, contract_name, source_code = extract_main_contract_source(contract_data)
+                context["source_info"] = {
+                    "path": path,
+                    "contract_name": contract_name,
+                    "source_code": source_code
+                }
+            except ValueError as e:
+                # Source code extraction failed, continue without it
+                if os.environ.get("DEBUG") == "1":
+                    print(f"Warning: Could not extract source code: {e}")
         
         return context
 
@@ -185,13 +201,56 @@ class LLMInference:
         if context.get('devdoc'):
             devdoc_section = f"\nDeveloper Documentation:\n{json.dumps(context['devdoc'], indent=2)}\n"
         
+        # Build source code section
+        source_section = ""
+        if context.get('source_info'):
+            source_info = context['source_info']
+            source_code = source_info['source_code']
+            
+            # Truncate source code if it's too long (keep under ~4000 chars for LLM context)
+            if len(source_code) > 4000:
+                # Try to find the specific function in the source code
+                function_name = context['name']
+                if function_name and f"function {function_name}" in source_code:
+                    # Extract relevant function and some context
+                    lines = source_code.split('\n')
+                    function_lines = []
+                    in_function = False
+                    brace_count = 0
+                    
+                    for line in lines:
+                        if f"function {function_name}" in line:
+                            in_function = True
+                        
+                        if in_function:
+                            function_lines.append(line)
+                            brace_count += line.count('{') - line.count('}')
+                            
+                            if brace_count == 0 and '{' in line:
+                                break
+                    
+                    if function_lines:
+                        source_code = '\n'.join(function_lines)
+                        source_section = f"\nRelevant Source Code (function {function_name}):\n```solidity\n{source_code}\n```\n"
+                    else:
+                        # Fallback: show first part of contract
+                        source_code = source_code[:4000] + "... [truncated]"
+                        source_section = f"\nContract Source Code (from {source_info['path']}, truncated):\n```solidity\n{source_code}\n```\n"
+                else:
+                    # Show first part of contract
+                    source_code = source_code[:4000] + "... [truncated]"
+                    source_section = f"\nContract Source Code (from {source_info['path']}, truncated):\n```solidity\n{source_code}\n```\n"
+            else:
+                source_section = f"\nContract Source Code (from {source_info['path']}):\n```solidity\n{source_code}\n```\n"
+        
         # Format the template with actual values
         return self.user_prompt_template % {
             'function_name': context['name'],
             'state_mutability': context['state_mutability'],
             'parameters': parameters,
             'userdoc_section': userdoc_section,
-            'devdoc_section': devdoc_section
+            'devdoc_section': devdoc_section,
+            'source_section': source_section
         }
 
     def _load_prompts(self) -> None:
