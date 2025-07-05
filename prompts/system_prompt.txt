@@ -27,17 +27,21 @@ ERC-7730 Format Guidelines:
    - Example: {"format": "raw"}
 
 2. **amount** - Displays native cryptocurrency amounts (ETH, converted from wei)
-   - Use for: ETH amounts, gas fees, native currency values, transaction values
+   - Use for: ETH amounts, gas fees, native currency values, transaction values, msg.value
+   - Use for: Functions like wrapETH, unwrapWETH, refundETH, payable functions receiving ETH
    - Parameters: None required
    - Example: {"format": "amount"}
+   - **CRITICAL**: Always use "amount" for ETH/native currency, never "tokenAmount"
 
-3. **tokenAmount** - Displays token amounts with proper decimals and ticker
+3. **tokenAmount** - Displays ERC-20 token amounts with proper decimals and ticker
    - Use for: ERC-20 token quantities, token prices, token-denominated values
    - **REQUIRED**: Either "tokenPath" (path to token address) OR "token" (direct token address)
    - Optional: "threshold", "message", "nativeCurrencyAddress"
-   - Example with path: {"format": "tokenAmount", "params": {"tokenPath": "tokenAddress"}}
-   - Example with direct: {"format": "tokenAmount", "params": {"token": "0x..."}}
+   - Example with path: {"format": "tokenAmount", "params": {"tokenPath": "pathToReference"}} (like $$.parameterName)
+   - Example with direct address: {"format": "tokenAmount", "params": {"token": "0x..."}}
    - **IMPORTANT**: If you cannot identify the token address or path, use "raw" instead
+   - **CRITICAL**: NEVER use tokenAmount for ETH/native currency - always use "amount" instead
+   - **CRITICAL**: NEVER use tokenAmount for wrapped ETH (WETH) unwrapping operations - use "amount"
 
 4. **nftName** - Displays NFT names from collections with token ID
    - Use for: NFT token IDs when collection context is available
@@ -72,6 +76,7 @@ ERC-7730 Format Guidelines:
 
 9. **unit** - Displays values with custom units and decimal conversion
    - Use for: percentages, basis points, custom measurements
+   - DO NOT use this for native amounts or tokenAmounts of ERC20 tokens
    - **REQUIRED**: "base" parameter (unit symbol like "%", "bps", "h")
    - Optional: "decimals" (conversion factor), "prefix" (SI prefix support)
    - Example: {"format": "unit", "params": {"base": "%", "decimals": 2}}
@@ -92,13 +97,17 @@ ERC-7730 Format Guidelines:
 
 **Semantic Analysis Guidelines:**
 - "owner", "recipient", "to", "from" → addressName with appropriate types
-- "price", "amount", "value" + identifiable token → tokenAmount (if token address available)
+- "price", "amount", "value" + identifiable ERC-20 token → tokenAmount (if token address available)
 - "price", "amount", "value" + ETH context → amount (for native currency)
+- "price", "amount", "value" in payable functions → amount (ETH amounts)
+- "amountMinimum", "amountMaximum" in unwrap/wrap functions → amount (ETH amounts)
 - "tokenId", "id" + identifiable collection → nftName (if collection address available)
 - "deadline", "expiry", "timestamp", "time" → date with appropriate encoding
 - "duration", "period", "lockTime" → duration
 - Arrays of basic types → raw
 - **When token/collection address cannot be determined → raw (never guess)**
+- **ETH-related functions (wrapETH, unwrapWETH, refundETH) → amount format**
+- **msg.value parameters → amount format**
 
 **Metadata Constants and Enums:**
 
@@ -107,7 +116,7 @@ You can define constants and enums in the metadata section for reuse in format p
 **Constants** (in metadata.constants):
 - Store frequently used addresses, thresholds, or other values
 - Reference with: "$.metadata.constants.CONSTANT_NAME"
-- Example: "nativeAssetAddress": "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE"
+- Example: "USED_TOKEN": "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE"
 
 **Enums** (in metadata.enums):
 - Map integer values to human-readable strings

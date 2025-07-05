@@ -49,6 +49,7 @@ class LLMInference:
         self,
         function_data: Function,
         contract_data: SourcifyContractData | None = None,
+        metadata = None,
     ) -> dict[str, tuple[FieldFormat, InputFieldParameters | None]]:
         """
         Use LLM to infer appropriate field formats for function parameters.
@@ -70,7 +71,7 @@ class LLMInference:
             return {name: (field.format, field.params) for name, field in cached.fields.items()}
         
         # Prepare context for LLM
-        context = self._prepare_function_context(function_data, contract_data)
+        context = self._prepare_function_context(function_data, contract_data, metadata)
         
         # Generate prompt for LLM
         prompt = self._generate_prompt(context)
@@ -144,7 +145,8 @@ class LLMInference:
     def _prepare_function_context(
         self, 
         function_data: Function, 
-        contract_data: SourcifyContractData | None
+        contract_data: SourcifyContractData | None,
+        metadata = None
     ) -> dict[str, Any]:
         """Prepare context information about the function for LLM analysis."""
         context = {
@@ -180,12 +182,17 @@ class LLMInference:
                 context["source_info"] = {
                     "path": path,
                     "contract_name": contract_name,
-                    "function_code": function_code
+                    "function_code": function_code,
+                    "constants_code": constants
                 }
             except ValueError as e:
                 # Source code extraction failed, continue without it
                 if os.environ.get("DEBUG") == "1":
                     print(f"Warning: Could not extract source code: {e}")
+        
+        # Add available constants from metadata
+        if metadata and metadata.constants:
+            context["available_constants"] = metadata.constants
         
         return context
 
@@ -224,6 +231,14 @@ class LLMInference:
             else:
                 source_section = f"\nNote: Source code for function '{function_name}' could not be extracted from {source_info['path']}\n"
         
+        # Build available constants section
+        constants_section = ""
+        if context.get('available_constants'):
+            constants_section = f"\nAvailable Constants:\nThe following constants are already defined in metadata and can be referenced with $.metadata.constants.CONSTANT_NAME:\n"
+            for name, value in context['available_constants'].items():
+                constants_section += f"- {name}: {value}\n"
+            constants_section += "\nYou can reference these in field parameters instead of defining new constants.\n"
+        
         # Format the template with actual values
         return self.user_prompt_template % {
             'function_name': context['name'],
@@ -231,7 +246,8 @@ class LLMInference:
             'parameters': parameters,
             'userdoc_section': userdoc_section,
             'devdoc_section': devdoc_section,
-            'source_section': source_section
+            'source_section': source_section,
+            'constants_section': constants_section
         }
 
     def _load_prompts(self) -> None:
@@ -343,6 +359,9 @@ class LLMInference:
                 if format_name not in format_mapping:
                     print(f"Warning: Unknown format '{format_name}', using RAW")
                 
+                # Validate and fix ETH amount misassignment
+                field_format = self._validate_eth_amount_format(field_format, param_name, function_data, params)
+                
                 # Convert params to appropriate type based on format
                 field_params = None
                 if params and field_format != FieldFormat.RAW:
@@ -446,3 +465,63 @@ class LLMInference:
             return None
         
         return None
+    
+    def _validate_eth_amount_format(self, field_format: FieldFormat, param_name: str, function_data: Function, params: dict[str, Any] | None) -> FieldFormat:
+        """Validate and fix ETH amount misassignment from tokenAmount to amount."""
+        # Only check if the format is tokenAmount
+        if field_format != FieldFormat.TOKEN_AMOUNT:
+            return field_format
+        
+        # Check if this is likely an ETH amount that was incorrectly assigned tokenAmount
+        function_name = function_data.name.lower()
+        param_name_lower = param_name.lower()
+        
+        # Check for ETH-specific function patterns
+        eth_function_patterns = [
+            'wrapeth', 'unwrapeth', 'wrap', 'unwrap', 'refundeth', 'refund',
+            'withdraweth', 'withdraw', 'depositeth', 'deposit'
+        ]
+        
+        # Check for ETH-specific parameter patterns
+        eth_param_patterns = [
+            'amount', 'value', 'ethvalue', 'ethamount', 'nativeamount',
+            'amountminimum', 'amountmaximum', 'amountmin', 'amountmax'
+        ]
+        
+        # Check if function is payable (likely handles ETH)
+        is_payable = function_data.stateMutability == 'payable'
+        
+        # Check if this looks like an ETH function
+        is_eth_function = any(pattern in function_name for pattern in eth_function_patterns)
+        
+        # Check if this looks like an ETH parameter
+        is_eth_param = any(pattern in param_name_lower for pattern in eth_param_patterns)
+        
+        # Check if params suggest this is not a token (no token address provided)
+        has_token_address = False
+        if params:
+            has_token_address = 'token' in params or 'tokenPath' in params
+        
+        # Check for special cases where nativeCurrencyAddress is used (wrong pattern)
+        has_native_currency_address = params and 'nativeCurrencyAddress' in params
+        
+        # Decision logic
+        should_be_amount = False
+        
+        if is_payable and is_eth_param and not has_token_address:
+            should_be_amount = True
+            print(f"Info: Converting tokenAmount to amount for payable function parameter '{param_name}' in '{function_name}'")
+        
+        elif is_eth_function and is_eth_param:
+            should_be_amount = True
+            print(f"Info: Converting tokenAmount to amount for ETH function parameter '{param_name}' in '{function_name}'")
+        
+        elif has_native_currency_address and not has_token_address:
+            should_be_amount = True
+            print(f"Info: Converting tokenAmount to amount for native currency parameter '{param_name}' in '{function_name}'")
+        
+        elif is_eth_param and not has_token_address:
+            should_be_amount = True
+            print(f"Info: Converting tokenAmount to amount for amount-like parameter '{param_name}' without token address in '{function_name}'")
+        
+        return FieldFormat.AMOUNT if should_be_amount else field_format

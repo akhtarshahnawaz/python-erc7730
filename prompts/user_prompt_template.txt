@@ -12,7 +12,9 @@ Parameters:
 
 %(source_section)s
 
-Based on the parameter names, types, documentation, and source code context, suggest:
+%(constants_section)s
+
+Based on the parameter names, types, documentation, source code context, and available constants, suggest:
 1. The most appropriate ERC-7730 display format for each parameter
 2. Better human-readable labels for parameters (if the current name is unclear)
 3. A very short intent message for hardware wallet displays (max 5 words)

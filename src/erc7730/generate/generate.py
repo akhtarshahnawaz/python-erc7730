@@ -1,3 +1,4 @@
+import os
 from collections.abc import Generator
 from typing import Any, assert_never
 
@@ -6,7 +7,7 @@ from pydantic import TypeAdapter
 from pydantic_string_url import HttpUrl
 
 from erc7730.common.abi import ABIDataType, compute_signature, get_functions
-from erc7730.common.client import get_contract_abis, get_contract_data, SourcifyContractData
+from erc7730.common.client import get_contract_abis, get_contract_data, SourcifyContractData, extract_main_contract_source, extract_function_and_constants
 from erc7730.generate.schema_tree import (
     SchemaArray,
     SchemaLeaf,
@@ -80,7 +81,7 @@ def generate_descriptor(
             print(f"Warning: Failed to fetch contract data for metadata inference: {e}")
     
     metadata = _generate_metadata(legal_name, owner, url, contract_data)
-    display = _generate_display(trees, auto, chain_id, contract_address if auto else None, functions)
+    display = _generate_display(trees, auto, chain_id, contract_address if auto else None, functions, metadata)
 
     return InputERC7730Descriptor(context=context, metadata=metadata, display=display)
 
@@ -107,7 +108,10 @@ def _generate_metadata(owner: str | None, legal_name: str | None, url: HttpUrl |
     if inferred_legal_name is not None or inferred_url is not None:
         info = OwnerInfo(legalName=inferred_legal_name, url=inferred_url)
     
-    return InputMetadata(owner=inferred_owner, info=info)
+    # Generate constants from contract data if available
+    constants = _generate_constants_from_contract_data(contract_data) if contract_data else None
+    
+    return InputMetadata(owner=inferred_owner, info=info, constants=constants)
 
 
 def _generate_context(
@@ -156,11 +160,11 @@ def _generate_context_calldata(
     return context, trees, functions
 
 
-def _generate_display(trees: dict[str, SchemaTree], auto: bool = False, chain_id: int | None = None, contract_address: Address | None = None, functions: list | None = None) -> InputDisplay:
-    return InputDisplay(formats=_generate_formats(trees, auto, chain_id, contract_address, functions))
+def _generate_display(trees: dict[str, SchemaTree], auto: bool = False, chain_id: int | None = None, contract_address: Address | None = None, functions: list | None = None, metadata: InputMetadata | None = None) -> InputDisplay:
+    return InputDisplay(formats=_generate_formats(trees, auto, chain_id, contract_address, functions, metadata))
 
 
-def _generate_formats(trees: dict[str, SchemaTree], auto: bool = False, chain_id: int | None = None, contract_address: Address | None = None, functions: list | None = None) -> dict[str, InputFormat]:
+def _generate_formats(trees: dict[str, SchemaTree], auto: bool = False, chain_id: int | None = None, contract_address: Address | None = None, functions: list | None = None, metadata: InputMetadata | None = None) -> dict[str, InputFormat]:
     formats: dict[str, InputFormat] = {}
     
     # Initialize LLM inference if auto mode is enabled
@@ -182,7 +186,7 @@ def _generate_formats(trees: dict[str, SchemaTree], auto: bool = False, chain_id
     
     for name, tree in trees.items():
         current_function = function_map.get(name) if function_map else None
-        if fields := list(_generate_fields(schema=tree, path=ROOT_DATA_PATH, auto=auto, llm_inference=llm_inference, contract_data=contract_data, function_data=current_function)):
+        if fields := list(_generate_fields(schema=tree, path=ROOT_DATA_PATH, auto=auto, llm_inference=llm_inference, contract_data=contract_data, function_data=current_function, metadata=metadata)):
             # Check if LLM suggested an intent message
             intent = None
             if auto and llm_inference and current_function:
@@ -192,18 +196,18 @@ def _generate_formats(trees: dict[str, SchemaTree], auto: bool = False, chain_id
     return formats
 
 
-def _generate_fields(schema: SchemaTree, path: DataPath, auto: bool = False, llm_inference=None, contract_data=None, function_data=None) -> Generator[InputField, Any, Any]:
+def _generate_fields(schema: SchemaTree, path: DataPath, auto: bool = False, llm_inference=None, contract_data=None, function_data=None, metadata=None) -> Generator[InputField, Any, Any]:
     match schema:
         case SchemaStruct(components=components) if path == ROOT_DATA_PATH:
             for name, component in components.items():
                 if name:
-                    yield from _generate_fields(component, data_path_append(path, Field(identifier=name)), auto, llm_inference, contract_data, function_data)
+                    yield from _generate_fields(component, data_path_append(path, Field(identifier=name)), auto, llm_inference, contract_data, function_data, metadata)
 
         case SchemaStruct(components=components):
             fields = [
                 field
                 for name, component in components.items()
-                for field in _generate_fields(component, DataPath(absolute=False, elements=[Field(identifier=name)]), auto, llm_inference, contract_data, function_data)
+                for field in _generate_fields(component, DataPath(absolute=False, elements=[Field(identifier=name)]), auto, llm_inference, contract_data, function_data, metadata)
                 if name
             ]
             yield InputNestedFields(path=path, fields=fields)
@@ -213,10 +217,10 @@ def _generate_fields(schema: SchemaTree, path: DataPath, auto: bool = False, llm
                 case SchemaStruct() | SchemaArray():
                     yield InputNestedFields(
                         path=data_path_append(path, Array()),
-                        fields=list(_generate_fields(component, DataPath(absolute=False, elements=[]), auto, llm_inference, contract_data, function_data)),
+                        fields=list(_generate_fields(component, DataPath(absolute=False, elements=[]), auto, llm_inference, contract_data, function_data, metadata)),
                     )
                 case SchemaLeaf():
-                    yield from _generate_fields(component, data_path_append(path, Array()), auto, llm_inference, contract_data, function_data)
+                    yield from _generate_fields(component, data_path_append(path, Array()), auto, llm_inference, contract_data, function_data, metadata)
                 case _:
                     assert_never(schema)
 
@@ -224,7 +228,7 @@ def _generate_fields(schema: SchemaTree, path: DataPath, auto: bool = False, llm
             name = _get_leaf_name(path)
             # Extract original parameter name from path for LLM lookup
             param_name = _get_param_name(path)
-            format, params = _generate_field(name, param_name, data_type, auto, llm_inference, contract_data, function_data)
+            format, params = _generate_field(name, param_name, data_type, auto, llm_inference, contract_data, function_data, metadata)
             
             # Check if LLM suggested a better label
             label = name
@@ -239,11 +243,11 @@ def _generate_fields(schema: SchemaTree, path: DataPath, auto: bool = False, llm
             assert_never(schema)
 
 
-def _generate_field(name: str, param_name: str, data_type: ABIDataType, auto: bool = False, llm_inference=None, contract_data=None, function_data=None) -> tuple[FieldFormat, InputFieldParameters | None]:
+def _generate_field(name: str, param_name: str, data_type: ABIDataType, auto: bool = False, llm_inference=None, contract_data=None, function_data=None, metadata=None) -> tuple[FieldFormat, InputFieldParameters | None]:
     # Try LLM inference first if available and auto mode is enabled
     if auto and llm_inference and function_data:
         try:
-            llm_formats = llm_inference.infer_field_formats(function_data, contract_data)
+            llm_formats = llm_inference.infer_field_formats(function_data, contract_data, metadata)
             # Check both parameter name and display name
             if param_name in llm_formats:
                 return llm_formats[param_name]
@@ -406,3 +410,129 @@ def _infer_url_from_contract_data(contract_data: SourcifyContractData) -> HttpUr
                 pass
     
     return None
+
+
+def _generate_constants_from_contract_data(contract_data: SourcifyContractData) -> dict[str, str | int | bool | float | None] | None:
+    """Generate constants from contract data by extracting contract constants/state variables."""
+    if not contract_data.sources:
+        return None
+    
+    constants = {}
+    
+    # Extract constants from the main contract source
+    try:
+        main_contract_source = extract_main_contract_source(contract_data)
+        if main_contract_source:
+            # Extract constants globally from the contract source
+            # Use any function name to get contract-level constants
+            from erc7730.common.abi import get_functions
+            
+            functions_obj = get_functions(contract_data.abi)
+            if functions_obj.functions:
+                # Get the first function to extract contract-level constants
+                first_func = next(iter(functions_obj.functions.values()))
+                try:
+                    _, constants_code = extract_function_and_constants(main_contract_source, first_func.name or "")
+                    if constants_code:
+                        # Parse constants from the extracted code
+                        parsed_constants = _parse_constants_from_code(constants_code)
+                        constants.update(parsed_constants)
+                        
+                        # Debug logging
+                        if constants and os.environ.get("DEBUG") == "1":
+                            print(f"Extracted {len(constants)} constants from contract: {list(constants.keys())}")
+                except Exception as e:
+                    print(f"Warning: Failed to extract constants from contract source: {e}")
+    except Exception as e:
+        print(f"Warning: Failed to extract constants from contract data: {e}")
+    
+    return constants if constants else None
+
+
+def _parse_constants_from_code(constants_code: str) -> dict[str, str | int | bool | float | None]:
+    """Parse constants from Solidity code."""
+    import re
+    
+    constants = {}
+    
+    # Debug logging
+    if os.environ.get("DEBUG") == "1":
+        print("Parsing constants from code:")
+        print(constants_code)
+        print("---")
+    
+    lines = constants_code.split('\n')
+    for line in lines:
+        stripped = line.strip()
+        if not stripped or stripped.startswith('//') or stripped.startswith('/*'):
+            continue
+            
+        # Look for constant declarations - more flexible pattern
+        if 'constant' in stripped and '=' in stripped:
+            # Pattern for constant declarations - handles various visibility modifiers
+            patterns = [
+                r'(\w+)\s+(?:public\s+|private\s+|internal\s+)?constant\s+(\w+)\s*=\s*([^;]+)',
+                r'(\w+)\s+constant\s+(?:public\s+|private\s+|internal\s+)?(\w+)\s*=\s*([^;]+)',
+                r'constant\s+(\w+)\s+(\w+)\s*=\s*([^;]+)'
+            ]
+            
+            for pattern in patterns:
+                match = re.search(pattern, stripped)
+                if match:
+                    if len(match.groups()) == 3:
+                        data_type, name, value = match.groups()
+                        parsed_value = _parse_constant_value(value.strip(), data_type)
+                        if parsed_value is not None:
+                            constants[name] = parsed_value
+                            if os.environ.get("DEBUG") == "1":
+                                print(f"Found constant: {name} = {parsed_value}")
+                    break
+                    
+        # Look for immutable variables
+        elif 'immutable' in stripped:
+            # Pattern for immutable declarations
+            pattern = r'(\w+)\s+(?:public\s+|private\s+|internal\s+)?immutable\s+(\w+)'
+            match = re.search(pattern, stripped)
+            if match:
+                data_type, name = match.groups()
+                # For immutable variables, we can't determine the value from source
+                # but we can note their existence for potential reference
+                constants[name] = None
+                if os.environ.get("DEBUG") == "1":
+                    print(f"Found immutable: {name} (value unknown)")
+    
+    return constants
+
+
+def _parse_constant_value(value: str, data_type: str) -> str | int | bool | float | None:
+    """Parse a constant value from Solidity code."""
+    value = value.strip()
+    
+    # Remove trailing semicolon if present
+    if value.endswith(';'):
+        value = value[:-1]
+    
+    # Boolean values
+    if value.lower() in ['true', 'false']:
+        return value.lower() == 'true'
+    
+    # String values
+    if value.startswith('"') and value.endswith('"'):
+        return value[1:-1]  # Remove quotes
+    
+    # Hex values
+    if value.startswith('0x'):
+        return value  # Keep as hex string
+    
+    # Numeric values
+    try:
+        # Try integer first
+        if '.' not in value and 'e' not in value.lower():
+            return int(value)
+        else:
+            return float(value)
+    except ValueError:
+        pass
+    
+    # Return as string if we can't parse it
+    return value
