@@ -182,7 +182,7 @@ def command_generate(
         # Get data from environment variables set by Hardhat plugin
         env_chain_id = os.environ.get("CHAIN_ID")
         env_address = os.environ.get("DEPLOYED_CONTRACT_ADDRESS")
-        env_artifact = os.environ.get("CONTRACT_ARTIFACT")
+        env_artifact_path = os.environ.get("CONTRACT_ARTIFACT_PATH")
         env_source_path = os.environ.get("CONTRACT_SOURCE_PATH")
         
         if not env_chain_id:
@@ -191,26 +191,38 @@ def command_generate(
         if not env_address:
             print("DEPLOYED_CONTRACT_ADDRESS environment variable is required when using --local")
             raise Exit(1)
-        if not env_artifact:
-            print("CONTRACT_ARTIFACT environment variable is required when using --local")
+        if not env_artifact_path:
+            print("CONTRACT_ARTIFACT_PATH environment variable is required when using --local")
             raise Exit(1)
             
         # Override command line parameters with environment variables
         chain_id = int(env_chain_id)
         address = env_address.lower()  # Convert to Address format
-        local_artifact_json = env_artifact
         local_source_path = Path(env_source_path) if env_source_path else None
         
-        # Parse artifact JSON to extract ABI
+        # Read artifact JSON from file path
         try:
-            artifact_data = json.loads(env_artifact)
+            artifact_path = Path(env_artifact_path)
+            if not artifact_path.exists():
+                print(f"Artifact file not found: {env_artifact_path}")
+                raise Exit(1)
+                
+            with open(artifact_path, 'r', encoding='utf-8') as f:
+                artifact_json_content = f.read()
+                
+            local_artifact_json = artifact_json_content
+            artifact_data = json.loads(artifact_json_content)
+            
             if "abi" in artifact_data:
                 abi_buffer = json.dumps(artifact_data["abi"]).encode('utf-8')
             else:
-                print("No ABI found in artifact JSON from environment.")
+                print("No ABI found in artifact JSON file.")
                 raise Exit(1)
         except json.JSONDecodeError as e:
-            print(f"Invalid JSON in CONTRACT_ARTIFACT environment variable: {e}")
+            print(f"Invalid JSON in artifact file {env_artifact_path}: {e}")
+            raise Exit(1)
+        except Exception as e:
+            print(f"Error reading artifact file {env_artifact_path}: {e}")
             raise Exit(1)
     else:
         # Normal mode - require chain_id and address

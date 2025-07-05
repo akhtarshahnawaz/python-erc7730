@@ -73,12 +73,15 @@ def generate_descriptor(
     :return: a generated ERC-7730 descriptor
     """
 
+    # Determine if we're in local mode
+    is_local_mode = local_artifact_json is not None
+    
     context, trees, functions = _generate_context(chain_id, contract_address, abi, eip712_schema, auto)
     
     # Get contract data for metadata inference if in auto mode
     contract_data = None
     if auto:
-        if local_artifact_json is not None:
+        if is_local_mode:
             # Create mock contract data from local artifact
             contract_data = _create_mock_contract_data(local_artifact_json, local_source_path)
         elif chain_id is not None and contract_address is not None:
@@ -88,7 +91,7 @@ def generate_descriptor(
                 print(f"Warning: Failed to fetch contract data for metadata inference: {e}")
     
     metadata = _generate_metadata(legal_name, owner, url, contract_data)
-    display = _generate_display(trees, auto, chain_id, contract_address if auto else None, functions, metadata)
+    display = _generate_display(trees, auto, chain_id, contract_address if auto else None, functions, metadata, is_local_mode, contract_data)
 
     return InputERC7730Descriptor(context=context, metadata=metadata, display=display)
 
@@ -167,23 +170,25 @@ def _generate_context_calldata(
     return context, trees, functions
 
 
-def _generate_display(trees: dict[str, SchemaTree], auto: bool = False, chain_id: int | None = None, contract_address: Address | None = None, functions: list | None = None, metadata: InputMetadata | None = None) -> InputDisplay:
-    return InputDisplay(formats=_generate_formats(trees, auto, chain_id, contract_address, functions, metadata))
+def _generate_display(trees: dict[str, SchemaTree], auto: bool = False, chain_id: int | None = None, contract_address: Address | None = None, functions: list | None = None, metadata: InputMetadata | None = None, is_local_mode: bool = False, contract_data: SourcifyContractData | None = None) -> InputDisplay:
+    return InputDisplay(formats=_generate_formats(trees, auto, chain_id, contract_address, functions, metadata, is_local_mode, contract_data))
 
 
-def _generate_formats(trees: dict[str, SchemaTree], auto: bool = False, chain_id: int | None = None, contract_address: Address | None = None, functions: list | None = None, metadata: InputMetadata | None = None) -> dict[str, InputFormat]:
+def _generate_formats(trees: dict[str, SchemaTree], auto: bool = False, chain_id: int | None = None, contract_address: Address | None = None, functions: list | None = None, metadata: InputMetadata | None = None, is_local_mode: bool = False, contract_data: SourcifyContractData | None = None) -> dict[str, InputFormat]:
     formats: dict[str, InputFormat] = {}
     
     # Initialize LLM inference if auto mode is enabled
     llm_inference = None
-    contract_data = None
     function_map = {}
     
     if auto and chain_id is not None and contract_address is not None:
         try:
             from erc7730.generate.llm_inference import LLMInference
             llm_inference = LLMInference()
-            contract_data = get_contract_data(chain_id, contract_address)
+            
+            # In local mode, use the provided contract_data instead of fetching from Sourcify
+            if not is_local_mode:
+                contract_data = get_contract_data(chain_id, contract_address)
             
             # Create a mapping from function signature to function for LLM inference
             if functions:
@@ -428,8 +433,11 @@ def _generate_constants_from_contract_data(contract_data: SourcifyContractData) 
     
     # Extract constants from the main contract source
     try:
-        main_contract_source = extract_main_contract_source(contract_data)
-        if main_contract_source:
+        main_contract_info = extract_main_contract_source(contract_data)
+        if main_contract_info:
+            # extract_main_contract_source returns (file_path, contract_name, solidity_source)
+            file_path, contract_name, main_contract_source = main_contract_info
+            
             # Extract constants globally from the contract source
             # Use any function name to get contract-level constants
             from erc7730.common.abi import get_functions
@@ -548,6 +556,8 @@ def _parse_constant_value(value: str, data_type: str) -> str | int | bool | floa
 def _create_mock_contract_data(artifact_json: str, source_path: Path | None) -> SourcifyContractData:
     """Create a mock SourcifyContractData from local artifact and source file."""
     import json
+    from pydantic import TypeAdapter
+    from erc7730.model.abi import ABI
     
     try:
         artifact_data = json.loads(artifact_json)
@@ -555,8 +565,18 @@ def _create_mock_contract_data(artifact_json: str, source_path: Path | None) -> 
         print(f"Warning: Invalid artifact JSON: {e}")
         return SourcifyContractData(abi=None, sources=None)
     
-    # Extract ABI
-    abi = artifact_data.get("abi", [])
+    # Extract and properly parse ABI
+    abi_raw = artifact_data.get("abi", [])
+    abi = None
+    if abi_raw:
+        try:
+            # Parse ABI using Pydantic TypeAdapter with mode='json' for less strict validation
+            abi_adapter = TypeAdapter(list[ABI])
+            abi = abi_adapter.validate_python(abi_raw, strict=False)
+        except Exception as e:
+            print(f"Warning: Failed to parse ABI: {e}")
+            # If parsing fails, still pass the raw ABI data for basic functionality
+            abi = abi_raw
     
     # Extract metadata if available
     metadata = artifact_data.get("metadata")
@@ -572,6 +592,7 @@ def _create_mock_contract_data(artifact_json: str, source_path: Path | None) -> 
     
     # Create sources dict if source file is provided
     sources = None
+    compilation = None
     if source_path and source_path.exists():
         try:
             with open(source_path, 'r', encoding='utf-8') as f:
@@ -580,26 +601,26 @@ def _create_mock_contract_data(artifact_json: str, source_path: Path | None) -> 
             # Extract contract name from artifact
             contract_name = artifact_data.get("contractName", "Contract")
             
+            # Determine the source file key - prefer from metadata if available, otherwise use relative path
+            source_file_key = source_path.name  # Default to filename
+            
+            # If metadata has sources, try to find a matching source entry
+            if metadata and "sources" in metadata:
+                for source_file in metadata["sources"].keys():
+                    if source_file.endswith(source_path.name) or source_file == str(source_path):
+                        source_file_key = source_file
+                        break
+            
             sources = {
-                str(source_path): {
+                source_file_key: {
                     "content": source_content
                 }
             }
             
-            # If metadata has sources, use that structure instead
-            if metadata and "sources" in metadata:
-                sources = {}
-                for source_file, source_info in metadata["sources"].items():
-                    if source_file == str(source_path) or source_file.endswith(source_path.name):
-                        sources[source_file] = {
-                            "content": source_content
-                        }
-                        break
-                else:
-                    # Fallback: use the source path as key
-                    sources[str(source_path)] = {
-                        "content": source_content
-                    }
+            # Create compilation data for extract_main_contract_source to work
+            compilation = {
+                "fullyQualifiedName": f"{source_file_key}:{contract_name}"
+            }
         except Exception as e:
             print(f"Warning: Could not read source file {source_path}: {e}")
     
@@ -608,5 +629,6 @@ def _create_mock_contract_data(artifact_json: str, source_path: Path | None) -> 
         metadata=metadata,
         userdoc=userdoc,
         devdoc=devdoc,
-        sources=sources
+        sources=sources,
+        compilation=compilation
     )
