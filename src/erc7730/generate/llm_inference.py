@@ -186,14 +186,13 @@ class LLMInference:
             devdoc_section = f"\nDeveloper Documentation:\n{json.dumps(context['devdoc'], indent=2)}\n"
         
         # Format the template with actual values
-        return self.user_prompt_template.format(
-            function_name=context['name'],
-            state_mutability=context['state_mutability'],
-            parameters=parameters,
-            userdoc_section=userdoc_section,
-            devdoc_section=devdoc_section
-        )
-        return prompt
+        return self.user_prompt_template % {
+            'function_name': context['name'],
+            'state_mutability': context['state_mutability'],
+            'parameters': parameters,
+            'userdoc_section': userdoc_section,
+            'devdoc_section': devdoc_section
+        }
 
     def _load_prompts(self) -> None:
         """Load prompts from external text files."""
