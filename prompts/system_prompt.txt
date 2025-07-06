@@ -37,7 +37,7 @@ ERC-7730 Format Guidelines:
    - Use for: ERC-20 token quantities, token prices, token-denominated values
    - **REQUIRED**: Either "tokenPath" (path to token address) OR "token" (direct token address)
    - Optional: "threshold", "message", "nativeCurrencyAddress"
-   - Example with path: {"format": "tokenAmount", "params": {"tokenPath": "pathToReference"}} (like $$.parameterName)
+   - Example with path: {"format": "tokenAmount", "params": {"tokenPath": "pathToReference"}} (like parameterName)
    - Example with direct address: {"format": "tokenAmount", "params": {"token": "0x..."}}
    - **IMPORTANT**: If you cannot identify the token address or path, use "raw" instead
    - **CRITICAL**: NEVER use tokenAmount for ETH/native currency - always use "amount" instead
