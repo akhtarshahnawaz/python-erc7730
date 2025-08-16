@@ -42,6 +42,16 @@ dependencies = [
     "python-dotenv>=1.1.1",
 ]
 
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["erc7730*"]
+
+
+[tool.setuptools.package-data]
+"erc7730.prompts" = ["*.txt"]
+
+
 [project.urls]
 Homepage = "https://ledgerhq.github.io/python-erc7730"
 Documentation = "https://ledgerhq.github.io/python-erc7730"

@@ -9,7 +9,7 @@ from erc7730.model.abi import Function
 from erc7730.common.client import SourcifyContractData, extract_main_contract_source, extract_function_and_constants
 from erc7730.model.display import FieldFormat, AddressNameType, DateEncoding
 from erc7730.model.input.display import InputFieldParameters, InputAddressNameParameters, InputTokenAmountParameters, InputDateParameters
-
+from importlib import resources
 
 class FieldSuggestion(NamedTuple):
     """LLM suggestion for a field including format, parameters, and label."""
@@ -252,27 +252,40 @@ class LLMInference:
 
     def _load_prompts(self) -> None:
         """Load prompts from external text files."""
-        # Get the directory containing this file
-        current_dir = Path(__file__).parent
-        # Navigate to the prompts directory
-        prompts_dir = current_dir.parent.parent.parent / "prompts"
+        # # Get the directory containing this file
+        # current_dir = Path(__file__).parent
+        # # Navigate to the prompts directory
+        # prompts_dir = current_dir.parent.parent.parent / "prompts"
         
-        # Load system prompt
-        system_prompt_path = prompts_dir / "system_prompt.txt"
-        if system_prompt_path.exists():
-            with open(system_prompt_path, 'r', encoding='utf-8') as f:
+        # # Load system prompt
+        # system_prompt_path = prompts_dir / "system_prompt.txt"
+        # if system_prompt_path.exists():
+        #     with open(system_prompt_path, 'r', encoding='utf-8') as f:
+        #         self.system_prompt = f.read()
+        # else:
+        #     raise FileNotFoundError(f"System prompt file not found: {system_prompt_path}")
+        
+        try:
+            with resources.open_text("erc7730.prompts", "system_prompt.txt") as f:
                 self.system_prompt = f.read()
-        else:
-            raise FileNotFoundError(f"System prompt file not found: {system_prompt_path}")
-        
+        except Exception as e:
+            raise FileNotFoundError(f"System prompt file not found: {e}")
+
         # Load user prompt template
-        user_prompt_path = prompts_dir / "user_prompt_template.txt"
-        if user_prompt_path.exists():
-            with open(user_prompt_path, 'r', encoding='utf-8') as f:
-                self.user_prompt_template = f.read()
-        else:
-            raise FileNotFoundError(f"User prompt template file not found: {user_prompt_path}")
+        # user_prompt_path = prompts_dir / "user_prompt_template.txt"
+        # if user_prompt_path.exists():
+        #     with open(user_prompt_path, 'r', encoding='utf-8') as f:
+        #         self.user_prompt_template = f.read()
+        # else:
+        #     raise FileNotFoundError(f"User prompt template file not found: {user_prompt_path}")
     
+
+        try:
+            with resources.open_text("erc7730.prompts", "user_prompt_template.txt") as f:
+                self.user_prompt_template = f.read()
+        except Exception as e:
+            raise FileNotFoundError(f"User prompt template file not found: {e}")
+
     def _get_system_prompt(self) -> str:
         """Get system prompt for LLM."""
         return self.system_prompt
